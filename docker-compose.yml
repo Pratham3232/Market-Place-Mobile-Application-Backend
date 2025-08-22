@@ -1,0 +1,10 @@
+services:
+  auth:
+    build:
+      context: .
+      dockerfile: "./apps/auth/Dockerfile"
+      target: development
+    command: npm run start:dev auth
+    volumes:
+      - .:/usr/src/app
+      - "/usr/src/app/node_modules"
