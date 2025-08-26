@@ -13,11 +13,6 @@ export class UserController {
         return this.userService.getUser(+id);
     }
 
-    @Get('email/:email')
-    async getUserByEmail(@Param('email') email: string): Promise<User | null> {
-        return this.userService.getUserByEmail(email);
-    }
-
     @Put(':id')
     async updateUser(
         @Param('id') id: number,

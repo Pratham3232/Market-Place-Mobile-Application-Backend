@@ -4,6 +4,7 @@ import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import { UserService } from './user/user.service';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,42 +13,31 @@ export class AuthService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) { }
 
-  async register(email: string, password: string, name?: string) {
-    const existingUser = await this.userService.getUserByEmail(email);
+  async register(createUserDto: CreateUserDto) {
+    const existingUser = await this.userService.getUserByPhoneNumber(createUserDto.phoneNumber);
     if (existingUser) {
       throw new UnauthorizedException('User already exists');
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.userService.createUser({
-      email,
-      password: hashedPassword,
-      name,
-    });
-
+    const user = await this.userService.createUser(createUserDto);
     return this.generateToken(user.id);
   }
 
-  async login(email: string, password: string) {
-    const user = await this.userService.getUserByEmail(email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    return this.generateToken(user.id);
-  }
+  // async login(phoneNumber: string) {
+  //   const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+  //   if (!user) {
+  //     throw new UnauthorizedException('Invalid credentials');
+  //   }
+  //   const isPasswordValid = await bcrypt.compare(password, user.password);
+  //   if (!isPasswordValid) {
+  //     throw new UnauthorizedException('Invalid credentials');
+  //   }
+  //   return this.generateToken(user.id);
+  // }
 
   private async generateToken(userId: number) {
     const token = uuidv4();
     const expiresIn = 3600;
-
     await this.cacheManager.set(token, userId, expiresIn * 1000);
-
     return {
       access_token: token,
       expires_in: expiresIn,

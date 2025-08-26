@@ -19,15 +19,6 @@
         "tsConfigPath": "apps/auth/tsconfig.app.json"
       }
     },
-    "channel": {
-      "type": "application",
-      "root": "apps/channel",
-      "entryFile": "main",
-      "sourceRoot": "apps/channel/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/channel/tsconfig.app.json"
-      }
-    },
     "common": {
       "type": "library",
       "root": "libs/common",
@@ -37,40 +28,13 @@
         "tsConfigPath": "libs/common/tsconfig.lib.json"
       }
     },
-    "organization": {
+    "providers": {
       "type": "application",
-      "root": "apps/organization",
+      "root": "apps/providers",
       "entryFile": "main",
-      "sourceRoot": "apps/organization/src",
+      "sourceRoot": "apps/providers/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/organization/tsconfig.app.json"
-      }
-    },
-    "storage": {
-      "type": "application",
-      "root": "apps/storage",
-      "entryFile": "main",
-      "sourceRoot": "apps/storage/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/storage/tsconfig.app.json"
-      }
-    },
-    "tasks": {
-      "type": "application",
-      "root": "apps/tasks",
-      "entryFile": "main",
-      "sourceRoot": "apps/tasks/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/tasks/tsconfig.app.json"
-      }
-    },
-    "workspace": {
-      "type": "application",
-      "root": "apps/workspace",
-      "entryFile": "main",
-      "sourceRoot": "apps/workspace/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/workspace/tsconfig.app.json"
+        "tsConfigPath": "apps/providers/tsconfig.app.json"
       }
     }
   }

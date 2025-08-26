@@ -1,9 +1,13 @@
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'PARENT', 'CHILD', 'PROVIDER', 'BUSINESS_PROVIDER', 'LOCATION_PROVIDER');
+
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "name" TEXT,
-    "password" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "role" "UserRole",
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

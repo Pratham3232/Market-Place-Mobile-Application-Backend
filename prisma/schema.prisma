@@ -8,10 +8,95 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int       @id @default(autoincrement())
+  phoneNumber String    @unique
+  name        String?
+  email       String?
+  role        UserRole?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relationships
+  provider Provider?
+}
+
+model Provider {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth  DateTime?
+  bio          String?
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  profileImage String?
+  isVerified   Boolean   @default(false)
+  rating       Float?    @default(0)
+  totalReviews Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relationships
+  services     Service[]
+  availability Availability[]
+
+  @@index([city, state])
+  @@index([isActive, isVerified])
+}
+
+model Service {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String?
+  pricePerHour    Decimal  @db.Decimal(10, 2)
+  category        String
+  subCategory     String
+  additionalNotes String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Foreign Keys
+  providerId Int
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([category, subCategory])
+  @@index([providerId, isActive])
+}
+
+model Availability {
+  id         Int       @id @default(autoincrement())
+  providerId Int
+  provider   Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  dayOfWeek  DayOfWeek
+  startTime  DateTime
+  endTime    DateTime
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([providerId, dayOfWeek, startTime, endTime])
+  @@index([providerId, dayOfWeek, isActive])
+}
+
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  PARENT
+  CHILD
+  PROVIDER
+  BUSINESS_PROVIDER
+  LOCATION_PROVIDER
 }
