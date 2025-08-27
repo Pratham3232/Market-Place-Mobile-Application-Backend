@@ -6,10 +6,6 @@ export class CreateProviderDto {
     bio?: string;
 
     @IsOptional()
-    @IsPhoneNumber()
-    phoneNumber?: string;
-
-    @IsOptional()
     @IsString()
     address?: string;
 

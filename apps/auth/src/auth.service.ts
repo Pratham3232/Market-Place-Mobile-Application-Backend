@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
-import * as bcrypt from 'bcrypt';
 import { UserService } from './user/user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 

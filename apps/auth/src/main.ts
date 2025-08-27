@@ -27,7 +27,7 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
-  await app.listen(configService.get("AUTH_HTTP_PORT") as number);
+  await app.listen(configService.get("AUTH_HTTP_PORT") || 3000);
 }
 
 bootstrap();

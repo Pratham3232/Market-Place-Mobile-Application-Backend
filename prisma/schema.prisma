@@ -8,52 +8,111 @@ datasource db {
 }
 
 model User {
-  id          Int       @id @default(autoincrement())
-  phoneNumber String    @unique
-  name        String?
-  email       String?
-  role        UserRole?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
+  id               Int               @id @default(autoincrement())
+  phoneNumber      String            @unique
+  name             String?
+  email            String?
+  roles            UserRole[]
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   // Relationships
-  provider Provider?
+  provider         Provider?
+  BusinessProvider BusinessProvider?
+  LocationProvider LocationProvider?
 }
 
 model Provider {
-  id           Int       @id @default(autoincrement())
-  userId       Int       @unique
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dateOfBirth  DateTime?
-  bio          String?
-  address      String?
-  city         String?
-  state        String?
-  zipCode      String?
-  profileImage String?
-  isVerified   Boolean   @default(false)
-  rating       Float?    @default(0)
-  totalReviews Int       @default(0)
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
+  id                 Int               @id @default(autoincrement())
+  userId             Int               @unique
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth        DateTime?
+  bio                String?
+  address            String?
+  city               String?
+  state              String?
+  zipCode            String?
+  profileImage       String?
+  isVerified         Boolean           @default(false)
+  rating             Float?            @default(0)
+  totalReviews       Int               @default(0)
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
   // Relationships
-  services     Service[]
-  availability Availability[]
+  services           Service[]
+  availability       Availability[]
+  BusinessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id])
+  businessProviderId Int?
 
   @@index([city, state])
   @@index([isActive, isVerified])
 }
 
+model BusinessProvider {
+  id             Int              @id @default(autoincrement())
+  userId         Int              @unique
+  User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName   String
+  businessEmail  String?
+  businessPhone  String?
+  website        String?
+  taxId          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  Provider       Provider[]
+  BusinessMember BusinessMember[]
+}
+
+model BusinessMember {
+  id                 Int               @id @default(autoincrement())
+  businessId         Int
+  name               String
+  email              String            @unique
+  phoneNumber        String            @unique
+  role               BusinesMemberRole
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  BusinessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id])
+  businessProviderId Int?
+}
+
+model LocationProvider {
+  id             Int              @id @default(autoincrement())
+  userId         Int              @unique
+  User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName   String
+  businessEmail  String?
+  businessPhone  String?
+  website        String?
+  taxId          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  LocationMember LocationMember[]
+}
+
+model LocationMember {
+  id                 Int               @id @default(autoincrement())
+  businessId         Int
+  name               String
+  email              String            @unique
+  phoneNumber        String            @unique
+  role               BusinesMemberRole
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  LocationProvider   LocationProvider? @relation(fields: [businessProviderId], references: [id])
+  businessProviderId Int?
+}
+
 model Service {
   id              Int      @id @default(autoincrement())
   name            String
-  description     String?
+  description     String   @default("")
   pricePerHour    Decimal  @db.Decimal(10, 2)
-  category        String
-  subCategory     String
+  category        String?  @default("")
+  subCategory     String?
   additionalNotes String?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -94,9 +153,14 @@ enum DayOfWeek {
 
 enum UserRole {
   SUPER_ADMIN
-  PARENT
-  CHILD
-  PROVIDER
+  MEMBER
+  SOLO_PROVIDER
   BUSINESS_PROVIDER
   LOCATION_PROVIDER
+}
+
+enum BusinesMemberRole {
+  ADMIN // Can manage all aspects of the business. Including creating, updating, and deleting users and services.
+  MANAGER // Can manage services. Including creating, updating, and deleting services.
+  READ // Can only read and view services and users.
 }
