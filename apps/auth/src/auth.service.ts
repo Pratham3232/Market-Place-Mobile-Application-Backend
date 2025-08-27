@@ -4,6 +4,7 @@ import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from './user/user.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import * as twilio from 'twilio';
 
 @Injectable()
 export class AuthService {
@@ -12,26 +13,139 @@ export class AuthService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) { }
 
-  async register(createUserDto: CreateUserDto) {
-    const existingUser = await this.userService.getUserByPhoneNumber(createUserDto.phoneNumber);
-    if (existingUser) {
-      throw new UnauthorizedException('User already exists');
+  async sendSignUpOtp(phoneNumber: string) {
+    try {
+      const otp = await this.otpGenerator();
+      await this.cacheManager.set(`register-otp-${phoneNumber}`, otp, 300 * 1000);
+      
+      // Send OTP to user's phone number
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const client = twilio(accountSid, authToken);
+
+      // const message = await client.messages.create({
+      //   body: `Your OTP is ${otp}`,
+      //   from: process.env.TWILIO_PHONE_NUMBER,
+      //   to: phoneNumber,
+      // });
+
+      console.log(`OTP for ${phoneNumber}: ${otp}`); // For development purposes only
+      // console.log(`Message body: ${message.body}`);
+
+      return {
+        success: true,
+        message: 'OTP sent successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      throw new Error('Failed to send OTP');
     }
-    const user = await this.userService.createUser(createUserDto);
-    return this.generateToken(user.id);
   }
 
-  // async login(phoneNumber: string) {
-  //   const user = await this.userService.getUserByPhoneNumber(phoneNumber);
-  //   if (!user) {
-  //     throw new UnauthorizedException('Invalid credentials');
-  //   }
-  //   const isPasswordValid = await bcrypt.compare(password, user.password);
-  //   if (!isPasswordValid) {
-  //     throw new UnauthorizedException('Invalid credentials');
-  //   }
-  //   return this.generateToken(user.id);
-  // }
+  async verifyRegisterOtp(phoneNumber: string, otp: string) {
+    try{
+      const cachedOtp = await this.cacheManager.get<string>(`register-otp-${phoneNumber}`)
+      if(!cachedOtp) {
+        throw new Error('OTP expired or not found');
+      }
+      if(cachedOtp !== otp) {
+        throw new Error('Invalid OTP');
+      }
+      await this.cacheManager.del(`register-otp-${phoneNumber}`);
+      return {
+        success: true,
+        message: 'OTP verified successfully',
+      }
+    }catch(err){
+      switch (err.message) {
+        case 'OTP expired or not found':
+          return { success: false, message: 'OTP expired or not found' };
+        case 'Invalid OTP':
+          return { success: false, message: 'Invalid OTP' };
+        default:
+          return { success: false, message: 'Failed to verify OTP' };
+      }
+    }
+  }
+
+  async register(createUserDto: CreateUserDto) {
+    try{
+      const existingUser = await this.userService.getUserByPhoneNumber(createUserDto.phoneNumber);
+      if (existingUser) {
+        throw new UnauthorizedException('User already exists');
+      }
+      const user = await this.userService.createUser(createUserDto);
+      return this.generateToken(user.id);
+    }catch(err){
+      console.error(err);
+    }
+  }
+
+  async login(phoneNumber: string) {
+    try{
+      const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      const otp = await this.otpGenerator();
+      await this.cacheManager.set(`login-otp-${phoneNumber}`, otp, 300 * 1000);
+
+      // Send OTP to user's phone number
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const client = twilio(accountSid, authToken);
+
+      // const message = await client.messages.create({
+      //   body: `Your login OTP is ${otp}`,
+      //   from: process.env.TWILIO_PHONE_NUMBER,
+      //   to: phoneNumber,
+      // });
+
+      console.log(`Login OTP for ${phoneNumber}: ${otp}`); // For development purposes only
+      // console.log(`Message body: ${message.body}`);
+
+      return {
+        success: true,
+        message: 'Login OTP sent successfully',
+      };
+    }catch(err){
+      switch (err.message) {
+        case 'User not found':
+          return { success: false, message: 'User not found' };
+        default:
+          return { success: false, message: 'Failed to send login OTP' };
+      }
+    }
+  }
+
+  async verifyLoginOtp(phoneNumber: string, otp: string) {
+    try{
+      const cachedOtp = await this.cacheManager.get<string>(`login-otp-${phoneNumber}`)
+      if(!cachedOtp) {
+        throw new Error('OTP expired or not found');
+      }
+      if(cachedOtp !== otp) {
+        throw new Error('Invalid OTP');
+      }
+
+      await this.cacheManager.del(`login-otp-${phoneNumber}`);
+      // const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      // return this.generateToken(user.id);
+    }catch(err){
+      switch (err.message) {
+        case 'OTP expired or not found':
+          return { success: false, message: 'OTP expired or not found' };
+        case 'Invalid OTP':
+          return { success: false, message: 'Invalid OTP' };
+        default:
+          return { success: false, message: 'Failed to verify OTP' };
+      }
+    }
+  }
+
+  private async otpGenerator(): Promise<string> {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
 
   private async generateToken(userId: number) {
     const token = uuidv4();

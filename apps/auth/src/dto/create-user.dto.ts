@@ -10,4 +10,8 @@ export class CreateUserDto {
     @IsNotEmpty()
     @IsPhoneNumber()
     phoneNumber: string;
+
+    // @IsNotEmpty()
+    // role: Enumerator<string>;
+    // memberType: string;
 }
