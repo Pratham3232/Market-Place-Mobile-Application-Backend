@@ -52,10 +52,13 @@ model BusinessProvider {
   userId         Int              @unique
   User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessName   String
+  businessType   String
+  city           String?
+  state          String?
+  zipCode        String?
   businessEmail  String?
-  businessPhone  String?
-  website        String?
-  taxId          String?
+  adminName      String?
+  address        String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   Provider       Provider[]
