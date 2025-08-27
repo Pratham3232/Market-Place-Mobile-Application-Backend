@@ -13,10 +13,30 @@ export class AuthController {
     return this.authService.register(body);
   }
 
+  @Post('sign-up-otp')
+  async signUpOtp(@Body() body: { phoneNumber: string }) {
+    console.log("Phone number received:", body.phoneNumber);
+    return this.authService.sendSignUpOtp(body.phoneNumber);
+  }
+
+  @Post('sign-up-otp-verify')
+  async signUpOtpVerification(@Body() body: { otp: string; phoneNumber: string }) {
+    return this.authService.verifyRegisterOtp(body.phoneNumber, body.otp);
+  }
+
   // @Post('login')
   // async login(@Body() body: { email: string; password: string }) {
   //   return this.authService.login(body.email, body.password);
   // }
+  @Post('login-otp')
+  async login(@Body() body: { phoneNumber: string }) {
+    return this.authService.login(body.phoneNumber);
+  }
+
+  @Post('login-otp-verify')
+  async loginOtpVerification(@Body() body: { otp: string; phoneNumber: string }) {
+    return this.authService.verifyLoginOtp(body.phoneNumber, body.otp);
+  }
 
   @Post('logout')
   async logout(@Headers('authorization') token: string) {
