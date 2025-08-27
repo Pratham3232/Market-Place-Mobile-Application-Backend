@@ -21,6 +21,13 @@ export class UserService {
         });
     }
 
+    async getUserByPhoneNumberAndRole(phoneNumber: string, role: UserRole): Promise<User | null> {
+        return this.prisma.user.findFirst({
+            // where: { phoneNumber, role },
+            where: { phoneNumber },
+        });
+    }
+
     async getUser(id: number): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { id },
@@ -34,12 +41,12 @@ export class UserService {
         });
     }
 
-    async updateUserType(id: number, type: UserRole): Promise<User> {
-        return this.prisma.user.update({
-            where: { id },
-            data: { role: type },
-        });
-    }
+    // async updateUserType(id: number, type: UserRole): Promise<User> {
+    //     return this.prisma.user.update({
+    //         where: { id },
+    //         data: { role: type },
+    //     });
+    // }
 
     async deleteUser(id: number): Promise<User> {
         return this.prisma.user.delete({

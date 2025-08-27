@@ -10,8 +10,6 @@ datasource db {
 model User {
   id               Int               @id @default(autoincrement())
   phoneNumber      String            @unique
-  name             String?
-  email            String?
   roles            UserRole[]
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())

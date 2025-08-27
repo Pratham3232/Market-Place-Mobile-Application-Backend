@@ -70,14 +70,19 @@ export class AuthService {
 
   async register(createUserDto: CreateUserDto) {
     try{
-      const existingUser = await this.userService.getUserByPhoneNumber(createUserDto.phoneNumber);
+      const existingUser = await this.userService.getUserByPhoneNumberAndRole(createUserDto.phoneNumber, createUserDto.role);
       if (existingUser) {
-        throw new UnauthorizedException('User already exists');
+        throw new Error('User already exists');
       }
       const user = await this.userService.createUser(createUserDto);
       return this.generateToken(user.id);
     }catch(err){
-      console.error(err);
+      switch (err.message) {
+        case 'User already exists':
+          return { success: false, message: 'User already exists' };
+        default:
+          return { success: false, message: 'Registration failed' };
+      }
     }
   }
 
@@ -144,7 +149,7 @@ export class AuthService {
   }
 
   private async otpGenerator(): Promise<string> {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return Math.floor(1000 + Math.random() * 9000).toString();
   }
 
   private async generateToken(userId: number) {
