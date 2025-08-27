@@ -17,7 +17,7 @@ export class AuthService {
     try {
       const otp = await this.otpGenerator();
       await this.cacheManager.set(`register-otp-${phoneNumber}`, otp, 300 * 1000);
-      
+
       // Send OTP to user's phone number
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -43,12 +43,12 @@ export class AuthService {
   }
 
   async verifyRegisterOtp(phoneNumber: string, otp: string) {
-    try{
+    try {
       const cachedOtp = await this.cacheManager.get<string>(`register-otp-${phoneNumber}`)
-      if(!cachedOtp) {
+      if (!cachedOtp) {
         throw new Error('OTP expired or not found');
       }
-      if(cachedOtp !== otp) {
+      if (cachedOtp !== otp) {
         throw new Error('Invalid OTP');
       }
       await this.cacheManager.del(`register-otp-${phoneNumber}`);
@@ -56,7 +56,7 @@ export class AuthService {
         success: true,
         message: 'OTP verified successfully',
       }
-    }catch(err){
+    } catch (err) {
       switch (err.message) {
         case 'OTP expired or not found':
           return { success: false, message: 'OTP expired or not found' };
@@ -69,14 +69,14 @@ export class AuthService {
   }
 
   async register(createUserDto: CreateUserDto) {
-    try{
+    try {
       const existingUser = await this.userService.getUserByPhoneNumberAndRole(createUserDto.phoneNumber, createUserDto.role);
       if (existingUser) {
         throw new Error('User already exists');
       }
       const user = await this.userService.createUser(createUserDto);
       return this.generateToken(user.id);
-    }catch(err){
+    } catch (err) {
       switch (err.message) {
         case 'User already exists':
           return { success: false, message: 'User already exists' };
@@ -87,7 +87,7 @@ export class AuthService {
   }
 
   async login(phoneNumber: string) {
-    try{
+    try {
       const user = await this.userService.getUserByPhoneNumber(phoneNumber);
       if (!user) {
         throw new UnauthorizedException('User not found');
@@ -113,7 +113,7 @@ export class AuthService {
         success: true,
         message: 'Login OTP sent successfully',
       };
-    }catch(err){
+    } catch (err) {
       switch (err.message) {
         case 'User not found':
           return { success: false, message: 'User not found' };
@@ -124,19 +124,19 @@ export class AuthService {
   }
 
   async verifyLoginOtp(phoneNumber: string, otp: string) {
-    try{
+    try {
       const cachedOtp = await this.cacheManager.get<string>(`login-otp-${phoneNumber}`)
-      if(!cachedOtp) {
+      if (!cachedOtp) {
         throw new Error('OTP expired or not found');
       }
-      if(cachedOtp !== otp) {
+      if (cachedOtp !== otp) {
         throw new Error('Invalid OTP');
       }
 
       await this.cacheManager.del(`login-otp-${phoneNumber}`);
       // const user = await this.userService.getUserByPhoneNumber(phoneNumber);
       // return this.generateToken(user.id);
-    }catch(err){
+    } catch (err) {
       switch (err.message) {
         case 'OTP expired or not found':
           return { success: false, message: 'OTP expired or not found' };
