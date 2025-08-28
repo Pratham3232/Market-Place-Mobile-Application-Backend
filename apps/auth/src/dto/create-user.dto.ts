@@ -7,5 +7,14 @@ export class CreateUserDto {
     phoneNumber: string;
 
     @IsNotEmpty()
-    role: UserRole;
+    roles: UserRole[];
+}
+
+export class RegisterUserDto {
+    @IsNotEmpty()
+    @IsPhoneNumber()
+    phoneNumber: string;
+
+    @IsNotEmpty()
+    roles: UserRole;
 }

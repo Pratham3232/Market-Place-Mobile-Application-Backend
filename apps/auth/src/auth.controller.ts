@@ -2,14 +2,14 @@ import { Controller, Post, Body, UnauthorizedException, Headers, UseGuards, Logg
 import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthGuard } from './guards/auth.guard';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) { }
 
   @Post('register')
-  async register(@Body() body: CreateUserDto) {
+  async register(@Body() body: RegisterUserDto) {
     return this.authService.register(body);
   }
 
@@ -24,10 +24,6 @@ export class AuthController {
     return this.authService.verifyRegisterOtp(body.phoneNumber, body.otp);
   }
 
-  // @Post('login')
-  // async login(@Body() body: { email: string; password: string }) {
-  //   return this.authService.login(body.email, body.password);
-  // }
   @Post('login-otp')
   async login(@Body() body: { phoneNumber: string }) {
     return this.authService.login(body.phoneNumber);
