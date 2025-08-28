@@ -1,6 +1,6 @@
-import { Controller, Get, Put, Delete, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { UserService } from './user.service';
-import { User } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { AuthGuard } from '../guards/auth.guard';
 import { MessagePattern } from '@nestjs/microservices';
 
@@ -25,6 +25,14 @@ export class UserController {
     @HttpCode(HttpStatus.NO_CONTENT)
     async deleteUser(@Param('id') id: number): Promise<void> {
         await this.userService.deleteUser(id);
+    }
+
+    @Put(':id/role')
+    async updateUserType(
+        @Param('id', ParseIntPipe) id: number,
+        @Body('type') type: UserRole
+    ): Promise<User> {
+        return this.userService.updateUserType(id, type);
     }
 
     @Get()

@@ -41,12 +41,23 @@ export class UserService {
         });
     }
 
-    // async updateUserType(id: number, type: UserRole): Promise<User> {
-    //     return this.prisma.user.update({
-    //         where: { id },
-    //         data: { role: type },
-    //     });
-    // }
+    async updateUserType(id: number, type: UserRole): Promise<User> {
+        const currentUser = await this.prisma.user.findUnique({
+            where: { id },
+            select: { roles: true }
+        });
+        if (!currentUser) {
+            throw new Error('User not found');
+        }
+        // Add the new role to the existing roles array if it's not already there
+        const updatedRoles = currentUser.roles.includes(type)
+            ? currentUser.roles
+            : [...currentUser.roles, type];
+        return this.prisma.user.update({
+            where: { id },
+            data: { roles: updatedRoles },
+        });
+    }
 
     async deleteUser(id: number): Promise<User> {
         return this.prisma.user.delete({
