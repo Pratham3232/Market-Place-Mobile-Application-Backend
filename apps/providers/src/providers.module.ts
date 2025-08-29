@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { ProvidersController } from './providers.controller';
 import { ProvidersService } from './providers.service';
 import { SoloModule } from './solo/solo.module';
+import { BusinessModule } from './business/business.module';
+import { LocationModule } from './location/location.module';
 
 @Module({
-  imports: [SoloModule],
+  imports: [SoloModule, BusinessModule, LocationModule],
   controllers: [ProvidersController],
   providers: [ProvidersService],
 })
