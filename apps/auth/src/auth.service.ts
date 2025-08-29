@@ -23,11 +23,11 @@ export class AuthService {
       const authToken = process.env.TWILIO_AUTH_TOKEN;
       const client = twilio(accountSid, authToken);
 
-      // const message = await client.messages.create({
-      //   body: `Your OTP is ${otp}`,
-      //   from: process.env.TWILIO_PHONE_NUMBER,
-      //   to: phoneNumber,
-      // });
+      const message = await client.messages.create({
+        body: `Your OTP is ${otp}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber,
+      });
 
       console.log(`OTP for ${phoneNumber}: ${otp}`); // For development purposes only
       // console.log(`Message body: ${message.body}`);
@@ -87,11 +87,11 @@ export class AuthService {
       const authToken = process.env.TWILIO_AUTH_TOKEN;
       const client = twilio(accountSid, authToken);
 
-      // const message = await client.messages.create({
-      //   body: `Your login OTP is ${otp}`,
-      //   from: process.env.TWILIO_PHONE_NUMBER,
-      //   to: phoneNumber,
-      // });
+      const message = await client.messages.create({
+        body: `Your login OTP is ${otp}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber,
+      });
 
       console.log(`Login OTP for ${phoneNumber}: ${otp}`); // For development purposes only
       // console.log(`Message body: ${message.body}`);
@@ -119,8 +119,11 @@ export class AuthService {
       }
 
       await this.cacheManager.del(`login-otp-${phoneNumber}`);
-      // const user = await this.userService.getUserByPhoneNumber(phoneNumber);
-      // return this.generateToken(user.id);
+      const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return this.generateToken(user.id);
     } catch (err) {
       return {
         success: false,
