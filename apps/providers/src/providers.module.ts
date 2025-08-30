@@ -5,9 +5,10 @@ import { SoloModule } from './solo/solo.module';
 import { BusinessModule } from './business/business.module';
 import { LocationModule } from './location/location.module';
 import { PrismaModule } from '@app/common';
+import { ServicesModule } from './services/services.module';
 
 @Module({
-  imports: [PrismaModule, SoloModule, BusinessModule, LocationModule],
+  imports: [PrismaModule, SoloModule, BusinessModule, LocationModule, ServicesModule],
   controllers: [ProvidersController],
   providers: [ProvidersService],
 })

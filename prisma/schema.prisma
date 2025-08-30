@@ -114,6 +114,8 @@ model Service {
   description     String   @default("")
   pricePerHour    Decimal  @db.Decimal(10, 2)
   category        String?  @default("")
+  serviceProviderOptions ServiceProviderOptions[]
+  bookingPreference BookingPreference?
   subCategory     String?
   additionalNotes String?
   isActive        Boolean  @default(true)
@@ -165,4 +167,16 @@ enum BusinesMemberRole {
   ADMIN // Can manage all aspects of the business. Including creating, updating, and deleting users and services.
   MANAGER // Can manage services. Including creating, updating, and deleting services.
   READ // Can only read and view services and users.
+}
+
+enum ServiceProviderOptions {
+  AT_CUSTOMER_LOCATION
+  AT_PROVIDER_LOCATION
+  VIRTUAL
+  LOCAL_PARTNER_LOCATION
+}
+
+enum BookingPreference {
+  INSTANT_BOOKING
+  REVIEW_REQUEST
 }
