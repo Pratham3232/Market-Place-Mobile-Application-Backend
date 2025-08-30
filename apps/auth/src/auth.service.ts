@@ -3,7 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from './user/user.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import * as twilio from 'twilio';
 
 @Injectable()
@@ -23,11 +23,11 @@ export class AuthService {
       const authToken = process.env.TWILIO_AUTH_TOKEN;
       const client = twilio(accountSid, authToken);
 
-      // const message = await client.messages.create({
-      //   body: `Your OTP is ${otp}`,
-      //   from: process.env.TWILIO_PHONE_NUMBER,
-      //   to: phoneNumber,
-      // });
+      const message = await client.messages.create({
+        body: `Your OTP is ${otp}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber,
+      });
 
       console.log(`OTP for ${phoneNumber}: ${otp}`); // For development purposes only
       // console.log(`Message body: ${message.body}`);
@@ -38,7 +38,10 @@ export class AuthService {
       };
     } catch (err) {
       console.error(err);
-      throw new Error('Failed to send OTP');
+      return {
+        success: false,
+        message: err.message || 'Failed to send OTP',
+      };
     }
   }
 
@@ -57,32 +60,19 @@ export class AuthService {
         message: 'OTP verified successfully',
       }
     } catch (err) {
-      switch (err.message) {
-        case 'OTP expired or not found':
-          return { success: false, message: 'OTP expired or not found' };
-        case 'Invalid OTP':
-          return { success: false, message: 'Invalid OTP' };
-        default:
-          return { success: false, message: 'Failed to verify OTP' };
-      }
+      return { 
+        success: false, 
+        message: err.message 
+      };
     }
   }
 
-  async register(createUserDto: CreateUserDto) {
+  async register(registerUserDto: RegisterUserDto) {
     try {
-      const existingUser = await this.userService.getUserByPhoneNumberAndRole(createUserDto.phoneNumber, createUserDto.role);
-      if (existingUser) {
-        throw new Error('User already exists');
-      }
-      const user = await this.userService.createUser(createUserDto);
+      const user = await this.userService.registerOrUpdateUserRole(registerUserDto);
       return this.generateToken(user.id);
     } catch (err) {
-      switch (err.message) {
-        case 'User already exists':
-          return { success: false, message: 'User already exists' };
-        default:
-          return { success: false, message: 'Registration failed' };
-      }
+      return { success: false, message: err.message };
     }
   }
 
@@ -100,11 +90,11 @@ export class AuthService {
       const authToken = process.env.TWILIO_AUTH_TOKEN;
       const client = twilio(accountSid, authToken);
 
-      // const message = await client.messages.create({
-      //   body: `Your login OTP is ${otp}`,
-      //   from: process.env.TWILIO_PHONE_NUMBER,
-      //   to: phoneNumber,
-      // });
+      const message = await client.messages.create({
+        body: `Your login OTP is ${otp}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber,
+      });
 
       console.log(`Login OTP for ${phoneNumber}: ${otp}`); // For development purposes only
       // console.log(`Message body: ${message.body}`);
@@ -114,12 +104,10 @@ export class AuthService {
         message: 'Login OTP sent successfully',
       };
     } catch (err) {
-      switch (err.message) {
-        case 'User not found':
-          return { success: false, message: 'User not found' };
-        default:
-          return { success: false, message: 'Failed to send login OTP' };
-      }
+      return {
+        success: false,
+        message: err.message
+      };
     }
   }
 
@@ -134,17 +122,16 @@ export class AuthService {
       }
 
       await this.cacheManager.del(`login-otp-${phoneNumber}`);
-      // const user = await this.userService.getUserByPhoneNumber(phoneNumber);
-      // return this.generateToken(user.id);
-    } catch (err) {
-      switch (err.message) {
-        case 'OTP expired or not found':
-          return { success: false, message: 'OTP expired or not found' };
-        case 'Invalid OTP':
-          return { success: false, message: 'Invalid OTP' };
-        default:
-          return { success: false, message: 'Failed to verify OTP' };
+      const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
       }
+      return this.generateToken(user.id);
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message
+      };
     }
   }
 
@@ -159,6 +146,7 @@ export class AuthService {
     return {
       access_token: token,
       expires_in: expiresIn,
+      user_id: userId
     };
   }
 

@@ -31,6 +31,7 @@ model Provider {
   state              String?
   zipCode            String?
   profileImage       String?
+  soloProvider       Boolean?          @default(false)
   isVerified         Boolean           @default(false)
   rating             Float?            @default(0)
   totalReviews       Int               @default(0)

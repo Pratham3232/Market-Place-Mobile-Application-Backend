@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { User, UserRole } from '@prisma/client';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { RegisterUserDto } from '../dto/create-user.dto';
 
 @Injectable()
 export class UserService {
@@ -21,11 +22,44 @@ export class UserService {
         });
     }
 
-    async getUserByPhoneNumberAndRole(phoneNumber: string, role: UserRole): Promise<User | null> {
+    // Accepts an array of roles for checking if user has any of the roles
+    async getUserByPhoneNumberAndRole(phoneNumber: string, roles: UserRole[]): Promise<User | null> {
         return this.prisma.user.findFirst({
-            // where: { phoneNumber, role },
-            where: { phoneNumber },
+            where: { 
+                phoneNumber,
+                roles: {
+                    hasSome: roles,
+                }
+            },
         });
+    }
+
+    // Register user with a single role, or add role to existing user
+    async registerOrUpdateUserRole(registerUserDto: RegisterUserDto): Promise<User> {
+        const { phoneNumber, roles, ...rest } = registerUserDto;
+        const role = Array.isArray(roles) ? roles[0] : roles; // Only one role allowed for register
+        let user = await this.prisma.user.findUnique({ where: { phoneNumber } });
+
+        if (user) {
+            // Add role if not present
+            if (!user.roles.includes(role)) {
+                const updatedRoles = [...user.roles, role];
+                user = await this.prisma.user.update({
+                    where: { id: user.id },
+                    data: { roles: updatedRoles },
+                });
+            }
+            return user;
+        } else {
+            // Create user with roles array containing the single role
+            return this.prisma.user.create({
+                data: {
+                    phoneNumber,
+                    roles: [role],
+                    ...rest,
+                },
+            });
+        }
     }
 
     async getUser(id: number): Promise<User | null> {

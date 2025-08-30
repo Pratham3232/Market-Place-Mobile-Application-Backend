@@ -1,0 +1,147 @@
+
+// Enums
+Enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+Enum UserRole {
+  SUPER_ADMIN
+  MEMBER
+  SOLO_PROVIDER
+  BUSINESS_PROVIDER
+  LOCATION_PROVIDER
+}
+
+Enum BusinesMemberRole {
+  ADMIN
+  MANAGER
+  READ
+}
+
+// Tables
+Table User {
+  id int [pk, increment]
+  phoneNumber varchar [unique, not null]
+  roles UserRole[] [not null]
+  isActive boolean [default: true, not null]
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+}
+
+Table Provider {
+  id int [pk, increment]
+  userId int [unique, not null, ref: - User.id]
+  dateOfBirth timestamp
+  bio text
+  address varchar
+  city varchar
+  state varchar
+  zipCode varchar
+  profileImage varchar
+  isVerified boolean [default: false, not null]
+  rating float [default: 0]
+  totalReviews int [default: 0, not null]
+  isActive boolean [default: true, not null]
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+  businessProviderId int [ref: > BusinessProvider.id]
+
+  indexes {
+    (city, state)
+    (isActive, isVerified)
+  }
+}
+
+Table BusinessProvider {
+  id int [pk, increment]
+  userId int [unique, not null, ref: - User.id]
+  businessName varchar [not null]
+  businessType varchar [not null]
+  city varchar
+  state varchar
+  zipCode varchar
+  businessEmail varchar
+  adminName varchar
+  address varchar
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+}
+
+Table BusinessMember {
+  id int [pk, increment]
+  businessId int [not null]
+  name varchar [not null]
+  email varchar [unique, not null]
+  phoneNumber varchar [unique, not null]
+  role BusinesMemberRole [not null]
+  isActive boolean [default: true, not null]
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+  businessProviderId int [ref: > BusinessProvider.id]
+}
+
+Table LocationProvider {
+  id int [pk, increment]
+  userId int [unique, not null, ref: - User.id]
+  businessName varchar [not null]
+  businessEmail varchar
+  businessPhone varchar
+  website varchar
+  taxId varchar
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+}
+
+Table LocationMember {
+  id int [pk, increment]
+  businessId int [not null]
+  name varchar [not null]
+  email varchar [unique, not null]
+  phoneNumber varchar [unique, not null]
+  role BusinesMemberRole [not null]
+  isActive boolean [default: true, not null]
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+  businessProviderId int [ref: > LocationProvider.id]
+}
+
+Table Service {
+  id int [pk, increment]
+  name varchar [not null]
+  description varchar [default: "", not null]
+  pricePerHour decimal(10,2) [not null]
+  category varchar [default: ""]
+  subCategory varchar
+  additionalNotes varchar
+  isActive boolean [default: true, not null]
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+  providerId int [not null, ref: > Provider.id]
+
+  indexes {
+    (category, subCategory)
+    (providerId, isActive)
+  }
+}
+
+Table Availability {
+  id int [pk, increment]
+  providerId int [not null, ref: > Provider.id]
+  dayOfWeek DayOfWeek [not null]
+  startTime timestamp [not null]
+  endTime timestamp [not null]
+  isActive boolean [default: true, not null]
+  createdAt timestamp [default: `now()`, not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    (providerId, dayOfWeek, startTime, endTime) [unique]
+    (providerId, dayOfWeek, isActive)
+  }
+}

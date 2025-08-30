@@ -1,16 +1,14 @@
+
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE, AUTH_QUEUE } from '@app/common';
-import { SoloService } from './solo.service';
-import { SoloController } from './solo.controller';
-import { CacheModule, ConfigModule, LoggerModule, PrismaModule } from '@app/common';
+import { BusinessService } from './business.service';
+import { BusinessController } from './business.controller';
+import { PrismaModule } from '../../../../libs/common/src/prisma/prisma.module';
 
 @Module({
   imports: [
     PrismaModule,
-    LoggerModule,
-    CacheModule,
-    ConfigModule,
     ClientsModule.register([
       {
         name: AUTH_SERVICE,
@@ -23,7 +21,7 @@ import { CacheModule, ConfigModule, LoggerModule, PrismaModule } from '@app/comm
       },
     ]),
   ],
-  controllers: [SoloController],
-  providers: [SoloService],
+  controllers: [BusinessController],
+  providers: [BusinessService],
 })
-export class SoloModule { }
+export class BusinessModule {}
