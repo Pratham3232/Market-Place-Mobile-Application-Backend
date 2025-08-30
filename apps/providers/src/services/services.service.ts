@@ -25,31 +25,67 @@ export class ServicesService {
   }
 
   async create(services: CreateServiceDto[]) {
-    try{
+    try {
+      // Check all providerIds are the same
+      const providerIds = services.map(s => s.providerId);
+      const uniqueProviderIds = Array.from(new Set(providerIds));
+      if (uniqueProviderIds.length !== 1) {
+        return {
+          success: false,
+          message: 'All services must have the same providerId.'
+        };
+      }
+      // Check provider exists
+      const providerExists = await this.prismaService.provider.findUnique({
+        where: { id: uniqueProviderIds[0] }
+      });
+      if (!providerExists) {
+        return {
+          success: false,
+          message: 'Provider does not exist.'
+        };
+      }
       const createdServices = await this.prismaService.service.createMany({
         data: services
-      })
-
+      });
       return {
         success: true,
         data: {
           services: createdServices
         }
-      }
-    }catch(err){
+      };
+    } catch (err) {
       return {
         success: false,
         message: err.message
-      }
+      };
     }
   }
 
   async createAvailability(availabilities: CreateAvailabilityDto[]) {
     try {
+      // Check all providerIds are the same
+      const providerIds = availabilities.map(a => a.providerId);
+      const uniqueProviderIds = Array.from(new Set(providerIds));
+      if (uniqueProviderIds.length !== 1) {
+        return {
+          success: false,
+          message: 'All availabilities must have the same providerId.'
+        };
+      }
+      // Check provider exists
+      const providerExists = await this.prismaService.provider.findUnique({
+        where: { id: uniqueProviderIds[0] }
+      });
+      if (!providerExists) {
+        return {
+          success: false,
+          message: 'Provider does not exist.'
+        };
+      }
       const createdAvailabilities = await this.prismaService.availability.createMany({
         data: availabilities
       });
-
       return {
         success: true,
         data: {
