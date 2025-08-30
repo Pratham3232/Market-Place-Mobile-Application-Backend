@@ -15,6 +15,11 @@ export class AuthService {
 
   async sendSignUpOtp(phoneNumber: string) {
     try {
+      const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      if(user){
+        throw new UnauthorizedException('User already exists');
+      }
+      
       const otp = await this.otpGenerator();
       await this.cacheManager.set(`register-otp-${phoneNumber}`, otp, 300 * 1000);
 

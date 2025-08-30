@@ -7,6 +7,12 @@ CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'MEMBER', 'SOLO_PROVIDER', 'BUSIN
 -- CreateEnum
 CREATE TYPE "BusinesMemberRole" AS ENUM ('ADMIN', 'MANAGER', 'READ');
 
+-- CreateEnum
+CREATE TYPE "ServiceProviderOptions" AS ENUM ('AT_CUSTOMER_LOCATION', 'AT_PROVIDER_LOCATION', 'VIRTUAL', 'LOCAL_PARTNER_LOCATION');
+
+-- CreateEnum
+CREATE TYPE "BookingPreference" AS ENUM ('INSTANT_BOOKING', 'REVIEW_REQUEST');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
@@ -114,6 +120,8 @@ CREATE TABLE "Service" (
     "description" TEXT NOT NULL DEFAULT '',
     "pricePerHour" DECIMAL(10,2) NOT NULL,
     "category" TEXT DEFAULT '',
+    "serviceProviderOptions" "ServiceProviderOptions"[],
+    "bookingPreference" "BookingPreference",
     "subCategory" TEXT,
     "additionalNotes" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
