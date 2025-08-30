@@ -20,7 +20,7 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
-RUN npm run build auth
+RUN npm run build providers
 
 FROM node:24-slim AS production
 
@@ -41,4 +41,4 @@ RUN npx prisma generate
 COPY --from=development /usr/src/app/dist ./dist
 
 # Command to run the application
-CMD ["node", "dist/apps/auth/main"]
+CMD ["node", "dist/apps/providers/main"]
