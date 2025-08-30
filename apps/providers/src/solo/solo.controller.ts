@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
 import { SoloService } from './solo.service';
 import { CreateSoloDto } from './dto/create-solo.dto';
 import { UpdateSoloDto } from './dto/update-solo.dto';
@@ -19,7 +19,7 @@ export class SoloController {
 
     @Post()
     async create(@Body() createSoloDto: CreateSoloDto) {
-        return this.soloService.create(createSoloDto);
+        return this.soloService.create(createSoloDto, createSoloDto.userId);
     }
 
     @Patch(':id')

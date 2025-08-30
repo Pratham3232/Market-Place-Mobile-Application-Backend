@@ -38,7 +38,10 @@ export class AuthService {
       };
     } catch (err) {
       console.error(err);
-      throw new Error('Failed to send OTP');
+      return {
+        success: false,
+        message: err.message || 'Failed to send OTP',
+      };
     }
   }
 
@@ -143,6 +146,7 @@ export class AuthService {
     return {
       access_token: token,
       expires_in: expiresIn,
+      user_id: userId
     };
   }
 
