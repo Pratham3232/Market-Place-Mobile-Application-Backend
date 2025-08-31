@@ -93,9 +93,17 @@ export class UserService {
         });
     }
 
-    async deleteUser(id: number): Promise<User> {
+    async deleteUser(id: string): Promise<User> {
+        // return this.prisma.user.delete({
+        //     where: { id: Number(id) },
+        // });
+        const userId = Number(id);
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            throw new Error('User not found');
+        }
         return this.prisma.user.delete({
-            where: { id: Number(id) },
+            where: { id: userId },
         });
     }
 
