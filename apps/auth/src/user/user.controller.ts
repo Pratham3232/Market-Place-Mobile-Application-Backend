@@ -22,8 +22,8 @@ export class UserController {
     }
 
     @Delete(':id')
-    @HttpCode(HttpStatus.NO_CONTENT)
-    async deleteUser(@Param('id') id: number): Promise<void> {
+    // @HttpCode(HttpStatus.NO_CONTENT)
+    async deleteUser(@Param('id') id: string): Promise<void> {
         await this.userService.deleteUser(id);
     }
 
