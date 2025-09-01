@@ -46,7 +46,8 @@ export class ServicesService {
         };
       }
       const createdServices = await this.prismaService.service.createMany({
-        data: services
+        data: services,
+        skipDuplicates: true
       });
       return {
         success: true,
@@ -84,7 +85,8 @@ export class ServicesService {
         };
       }
       const createdAvailabilities = await this.prismaService.availability.createMany({
-        data: availabilities
+        data: availabilities,
+        skipDuplicates: true
       });
       return {
         success: true,
