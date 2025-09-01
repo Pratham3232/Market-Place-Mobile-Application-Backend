@@ -13,6 +13,11 @@ export class UserController {
         return this.userService.getUser(+id);
     }
 
+    @Get(':id/:role')
+    async getUserByRole(@Param('id') id: string, @Param('role') role: UserRole){
+        return this.userService.getUserByIdAndRole(id, role);
+    }
+
     @Put(':id')
     async updateUser(
         @Param('id') id: number,
