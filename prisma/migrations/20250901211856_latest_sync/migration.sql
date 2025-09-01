@@ -29,6 +29,8 @@ CREATE TABLE "User" (
 CREATE TABLE "Provider" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
     "dateOfBirth" TIMESTAMP(3),
     "bio" TEXT,
     "address" TEXT,
