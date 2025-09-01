@@ -16,6 +16,48 @@ export class UserService {
         });
     }
 
+    async getUserByIdAndRole(id: string, role: UserRole){
+        try{
+            let query: any = {
+                where: {
+                    id: Number(id),
+                },
+            };
+
+            switch (role) {
+                case UserRole.SOLO_PROVIDER:
+                    query.where.roles = { has: UserRole.SOLO_PROVIDER };
+                    query.include = { provider: true };
+                    break;
+
+                case UserRole.LOCATION_PROVIDER:
+                    query.where.roles = { has: UserRole.LOCATION_PROVIDER };
+                    query.include = { LocationProvider: true };
+                    break;
+
+                case UserRole.BUSINESS_PROVIDER:
+                    query.where.roles = { has: UserRole.BUSINESS_PROVIDER };
+                    query.include = { BusinessProvider: true };
+                    break;
+                default:
+                    query.include = {};
+            }
+
+            const user = await this.prisma.user.findFirst(query);
+
+            return {
+                status: true,
+                data: user
+            }
+
+        }catch(err){
+            return {
+                status: false,
+                error: err.message
+            }
+        }
+    }
+
     async getUserByPhoneNumber(phoneNumber: string): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { phoneNumber },
@@ -94,9 +136,6 @@ export class UserService {
     }
 
     async deleteUser(id: string): Promise<User> {
-        // return this.prisma.user.delete({
-        //     where: { id: Number(id) },
-        // });
         const userId = Number(id);
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
