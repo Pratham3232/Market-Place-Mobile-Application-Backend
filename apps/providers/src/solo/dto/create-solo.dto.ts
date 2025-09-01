@@ -1,8 +1,16 @@
-import { IsInt, IsOptional, IsString, IsBoolean, IsDateString, IsNumber } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsBoolean, IsDateString, IsNumber, IsEmail } from 'class-validator';
 
 export class CreateSoloDto {
 	@IsInt()
 	userId: number;
+
+	@IsOptional()
+	@IsString()
+	name: string;
+
+	@IsOptional()
+	@IsEmail()
+	email: string;
 
 	@IsOptional()
 	@IsDateString()
