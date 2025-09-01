@@ -8,7 +8,7 @@ import { MessagePattern } from '@nestjs/microservices';
 export class UserController {
     constructor(private readonly userService: UserService) { }
     @Get(':id')
-    @UseGuards(AuthGuard)
+    // @UseGuards(AuthGuard)
     async getUser(@Param('id') id: number): Promise<User | null> {
         return this.userService.getUser(+id);
     }
