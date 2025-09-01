@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsBoolean, IsArray, ValidateNested, IsUrl, IsPhoneNumber } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsArray, ValidateNested, IsUrl, IsPhoneNumber, IsEmail } from 'class-validator';
 
 export class CreateProviderDto {
     @IsOptional()
@@ -8,6 +8,13 @@ export class CreateProviderDto {
     @IsOptional()
     @IsString()
     address?: string;
+
+    @IsString()
+    name: string;
+
+    @IsString()
+    @IsEmail()
+    email: string;
 
     @IsOptional()
     @IsString()
