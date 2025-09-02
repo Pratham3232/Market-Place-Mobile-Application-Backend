@@ -25,7 +25,7 @@ export class CreateLocationDto {
 
 	@IsOptional()
 	@IsString()
-	taxId?: string;
+	fullAddress?: string;
 
 	@IsOptional()
 	@IsDateString()

@@ -99,7 +99,7 @@ CREATE TABLE "LocationProvider" (
     "phone" TEXT,
     "contactPerson" TEXT,
     "website" TEXT,
-    "taxId" TEXT,
+    "fullAddress" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
