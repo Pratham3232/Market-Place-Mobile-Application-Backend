@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { ServicesService } from './services.service';
-import { CreateServiceDto } from './dto/create-service.dto';
+import { CreateLocationServiceDto, CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 
@@ -11,6 +11,11 @@ export class ServicesController {
   @Post()
   async create(@Body() body: CreateServiceDto[]) {
     return this.servicesService.create(body);
+  }
+
+  @Post('location')
+  async createForLocation(@Body() body: CreateLocationServiceDto) {
+    return this.servicesService.createForLocation(body);
   }
 
   @Post('availability')

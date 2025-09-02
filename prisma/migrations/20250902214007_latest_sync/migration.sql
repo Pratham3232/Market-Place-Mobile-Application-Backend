@@ -13,6 +13,12 @@ CREATE TYPE "ServiceProviderOptions" AS ENUM ('AT_CUSTOMER_LOCATION', 'AT_PROVID
 -- CreateEnum
 CREATE TYPE "BookingPreference" AS ENUM ('INSTANT_BOOKING', 'REVIEW_REQUEST');
 
+-- CreateEnum
+CREATE TYPE "LocationBooking" AS ENUM ('PART_OF_SPACE', 'FULL_FACILITY');
+
+-- CreateEnum
+CREATE TYPE "BookingNotice" AS ENUM ('NONE', 'ONE_HOUR', 'EIGHT_HOURS', 'TWENTY_FOUR_HOURS');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
@@ -88,15 +94,41 @@ CREATE TABLE "BusinessMember" (
 CREATE TABLE "LocationProvider" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "businessName" TEXT NOT NULL,
-    "businessEmail" TEXT,
-    "businessPhone" TEXT,
+    "name" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "contactPerson" TEXT,
     "website" TEXT,
     "taxId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "LocationProvider_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LocationService" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL DEFAULT '',
+    "pricePerHour" DECIMAL(10,2) NOT NULL,
+    "category" TEXT DEFAULT '',
+    "partAvailableForBooking" "LocationBooking" NOT NULL,
+    "advanceNoticeTime" TEXT,
+    "parkingInstruction" TEXT DEFAULT '',
+    "sessionSize" INTEGER,
+    "equipmentAvailable" TEXT DEFAULT '',
+    "generalRules" TEXT DEFAULT '',
+    "activeFacilityInsurance" BOOLEAN NOT NULL DEFAULT false,
+    "accessibilityFeatures" TEXT DEFAULT '',
+    "wifiAvailability" BOOLEAN NOT NULL DEFAULT false,
+    "additionalNotes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "locationProviderId" INTEGER,
+
+    CONSTRAINT "LocationService_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -129,7 +161,8 @@ CREATE TABLE "Service" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "providerId" INTEGER NOT NULL,
+    "providerId" INTEGER,
+    "businessProviderId" INTEGER,
 
     CONSTRAINT "Service_pkey" PRIMARY KEY ("id")
 );
@@ -137,7 +170,9 @@ CREATE TABLE "Service" (
 -- CreateTable
 CREATE TABLE "Availability" (
     "id" SERIAL NOT NULL,
-    "providerId" INTEGER NOT NULL,
+    "providerId" INTEGER,
+    "locationProviderId" INTEGER,
+    "businessProviderId" INTEGER,
     "dayOfWeek" "DayOfWeek" NOT NULL,
     "startTime" TIMESTAMP(3) NOT NULL,
     "endTime" TIMESTAMP(3) NOT NULL,
@@ -173,6 +208,12 @@ CREATE UNIQUE INDEX "BusinessMember_phoneNumber_key" ON "BusinessMember"("phoneN
 CREATE UNIQUE INDEX "LocationProvider_userId_key" ON "LocationProvider"("userId");
 
 -- CreateIndex
+CREATE INDEX "LocationService_category_wifiAvailability_sessionSize_idx" ON "LocationService"("category", "wifiAvailability", "sessionSize");
+
+-- CreateIndex
+CREATE INDEX "LocationService_locationProviderId_isActive_idx" ON "LocationService"("locationProviderId", "isActive");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "LocationMember_email_key" ON "LocationMember"("email");
 
 -- CreateIndex
@@ -182,13 +223,13 @@ CREATE UNIQUE INDEX "LocationMember_phoneNumber_key" ON "LocationMember"("phoneN
 CREATE INDEX "Service_category_subCategory_idx" ON "Service"("category", "subCategory");
 
 -- CreateIndex
-CREATE INDEX "Service_providerId_isActive_idx" ON "Service"("providerId", "isActive");
+CREATE INDEX "Service_providerId_businessProviderId_isActive_idx" ON "Service"("providerId", "businessProviderId", "isActive");
 
 -- CreateIndex
-CREATE INDEX "Availability_providerId_dayOfWeek_isActive_idx" ON "Availability"("providerId", "dayOfWeek", "isActive");
+CREATE INDEX "Availability_providerId_locationProviderId_businessProvider_idx" ON "Availability"("providerId", "locationProviderId", "businessProviderId", "dayOfWeek", "isActive");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Availability_providerId_dayOfWeek_startTime_endTime_key" ON "Availability"("providerId", "dayOfWeek", "startTime", "endTime");
+CREATE UNIQUE INDEX "Availability_providerId_locationProviderId_businessProvider_key" ON "Availability"("providerId", "locationProviderId", "businessProviderId", "dayOfWeek", "startTime", "endTime");
 
 -- AddForeignKey
 ALTER TABLE "Provider" ADD CONSTRAINT "Provider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -206,10 +247,22 @@ ALTER TABLE "BusinessMember" ADD CONSTRAINT "BusinessMember_businessProviderId_f
 ALTER TABLE "LocationProvider" ADD CONSTRAINT "LocationProvider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LocationService" ADD CONSTRAINT "LocationService_locationProviderId_fkey" FOREIGN KEY ("locationProviderId") REFERENCES "LocationProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "LocationMember" ADD CONSTRAINT "LocationMember_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "LocationProvider"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Service" ADD CONSTRAINT "Service_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Service" ADD CONSTRAINT "Service_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Availability" ADD CONSTRAINT "Availability_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Availability" ADD CONSTRAINT "Availability_locationProviderId_fkey" FOREIGN KEY ("locationProviderId") REFERENCES "LocationProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Availability" ADD CONSTRAINT "Availability_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
