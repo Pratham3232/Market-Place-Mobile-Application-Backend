@@ -5,15 +5,19 @@ export class CreateLocationDto {
 	userId: number;
 
 	@IsString()
-	businessName: string;
+	name: string;
 
 	@IsOptional()
 	@IsEmail()
-	businessEmail?: string;
+	email?: string;
 
 	@IsOptional()
 	@IsString()
-	businessPhone?: string;
+	phone?: string;
+
+	@IsOptional()
+	@IsString()
+	contactPerson?: string;
 
 	@IsOptional()
 	@IsString()

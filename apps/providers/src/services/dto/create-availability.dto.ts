@@ -1,9 +1,18 @@
-import { IsInt, IsEnum, IsDateString, IsBoolean, IsOptional } from 'class-validator';
+import { IsInt, IsEnum, IsDateString, IsBoolean, IsOptional, IsIn } from 'class-validator';
 import { DayOfWeek } from '@prisma/client';
 
 export class CreateAvailabilityDto {
   @IsInt()
+  @IsOptional()
   providerId: number;
+
+  @IsInt()
+  @IsOptional()
+  locationProviderId: number;
+
+  @IsInt()
+  @IsOptional()
+  businessProviderId: number;
 
   @IsEnum(DayOfWeek)
   dayOfWeek: DayOfWeek;

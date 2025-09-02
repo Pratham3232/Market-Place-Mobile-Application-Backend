@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, IsEnum, IsDecimal, IsInt } from 'class-validator';
-import { ServiceProviderOptions, BookingPreference } from '@prisma/client';
+import { ServiceProviderOptions, BookingPreference, LocationBooking } from '@prisma/client';
 
 export class UpdateServiceDto {
   @IsString()
@@ -42,4 +42,72 @@ export class UpdateServiceDto {
   @IsInt()
   @IsOptional()
   providerId?: number;
+
+  @IsInt()
+      @IsOptional()
+      businessProviderId: number;
+  }
+  
+export class CreateLocationServiceDto {
+    @IsString()
+    name: string;
+
+    @IsString()
+    @IsOptional()
+    description?: string;
+
+    @IsNumber({ maxDecimalPlaces: 2 })
+    pricePerHour: number;
+
+    @IsString()
+    @IsOptional()
+    category?: string;
+
+    @IsEnum(LocationBooking)
+    partAvailableForBooking: LocationBooking;
+
+    // Can be enum or string value
+    @IsOptional()
+    @IsString()
+    advanceNoticeTime?: string;
+
+    @IsString()
+    @IsOptional()
+    parkingInstruction?: string;
+
+    @IsInt()
+    @IsOptional()
+    sessionSize?: number;
+
+    @IsString()
+    @IsOptional()
+    equipmentAvailable?: string;
+
+    @IsString()
+    @IsOptional()
+    generalRules?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    activeFacilityInsurance?: boolean;
+
+    @IsString()
+    @IsOptional()
+    accessibilityFeatures?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    wifiAvailability?: boolean;
+
+    @IsString()
+    @IsOptional()
+    additionalNotes?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    isActive?: boolean;
+
+    @IsInt()
+    @IsOptional()
+    locationProviderId?: number; // relation
 }

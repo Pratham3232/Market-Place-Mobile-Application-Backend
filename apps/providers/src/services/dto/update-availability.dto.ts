@@ -6,6 +6,14 @@ export class UpdateAvailabilityDto {
   @IsOptional()
   providerId?: number;
 
+  @IsInt()
+  @IsOptional()
+  locationProviderId?: number;
+
+  @IsInt()
+  @IsOptional()
+  businessProviderId?: number;
+
   @IsEnum(DayOfWeek)
   @IsOptional()
   dayOfWeek?: DayOfWeek;

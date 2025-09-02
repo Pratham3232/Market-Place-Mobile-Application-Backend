@@ -66,6 +66,8 @@ model BusinessProvider {
   updatedAt      DateTime         @updatedAt
   Provider       Provider[]
   BusinessMember BusinessMember[]
+  Services       Service[]
+  Availability   Availability[]
 }
 
 model BusinessMember {
@@ -86,14 +88,43 @@ model LocationProvider {
   id             Int              @id @default(autoincrement())
   userId         Int              @unique
   User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessName   String
-  businessEmail  String?
-  businessPhone  String?
+  name           String
+  email          String?
+  phone          String?
+  contactPerson  String?
   website        String?
   taxId          String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   LocationMember LocationMember[]
+  LocationService LocationService[]
+  Availability   Availability[]
+}
+
+model LocationService {
+  id                 Int               @id @default(autoincrement())
+  name               String
+  description       String            @default("")
+  pricePerHour      Decimal           @db.Decimal(10, 2)
+  category          String?           @default("")
+  partAvailableForBooking       LocationBooking        
+  advanceNoticeTime    String?
+  parkingInstruction String?           @default("")
+  sessionSize        Int?
+  equipmentAvailable String?           @default("")
+  generalRules       String?           @default("")
+  activeFacilityInsurance Boolean      @default(false)
+  accessibilityFeatures String?     @default("")
+  wifiAvailability   Boolean @default(false)
+  additionalNotes   String?
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  LocationProvider  LocationProvider? @relation(fields: [locationProviderId], references: [id], onDelete: Cascade)
+  locationProviderId Int?
+
+  @@index([category, wifiAvailability, sessionSize])
+  @@index([locationProviderId, isActive])
 }
 
 model LocationMember {
@@ -125,17 +156,24 @@ model Service {
   updatedAt       DateTime @updatedAt
 
   // Foreign Keys
-  providerId Int
-  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  providerId Int?
+  provider   Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  businessProviderId Int?
+  businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id], onDelete: Cascade)
 
   @@index([category, subCategory])
-  @@index([providerId, isActive])
+  @@index([providerId, businessProviderId, isActive])
 }
 
 model Availability {
   id         Int       @id @default(autoincrement())
-  providerId Int
-  provider   Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  providerId Int?
+  provider   Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  locationProviderId Int?
+  locationProvider   LocationProvider? @relation(fields: [locationProviderId], references: [id], onDelete: Cascade)
+  businessProviderId Int?
+  businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id], onDelete: Cascade)
   dayOfWeek  DayOfWeek
   startTime  DateTime
   endTime    DateTime
@@ -143,8 +181,8 @@ model Availability {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  @@unique([providerId, dayOfWeek, startTime, endTime])
-  @@index([providerId, dayOfWeek, isActive])
+  @@unique([providerId, locationProviderId, businessProviderId, dayOfWeek, startTime, endTime])
+  @@index([providerId, locationProviderId, businessProviderId, dayOfWeek, isActive])
 }
 
 enum DayOfWeek {
@@ -181,4 +219,16 @@ enum ServiceProviderOptions {
 enum BookingPreference {
   INSTANT_BOOKING
   REVIEW_REQUEST
+}
+
+enum LocationBooking {
+  PART_OF_SPACE
+  FULL_FACILITY
+}
+
+enum BookingNotice {
+  NONE
+  ONE_HOUR
+  EIGHT_HOURS
+  TWENTY_FOUR_HOURS
 }
