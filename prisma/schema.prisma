@@ -93,7 +93,7 @@ model LocationProvider {
   phone          String?
   contactPerson  String?
   website        String?
-  taxId          String?
+  fullAddress    String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   LocationMember LocationMember[]
