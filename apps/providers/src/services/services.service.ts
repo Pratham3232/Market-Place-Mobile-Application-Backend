@@ -108,6 +108,26 @@ export class ServicesService {
     }
   }
 
+  async createForLocations(locationServices: CreateLocationServiceDto[]) {
+    try {
+      const createdLocationServices = await this.prismaService.locationService.createMany({
+        data: locationServices,
+        skipDuplicates: true
+      });
+      return {
+        success: true,
+        data: {
+          locationServices: createdLocationServices
+        }
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message
+      };
+    }
+  }
+
   async createAvailability(availabilities: CreateAvailabilityDto[]) {
     try {
       if (availabilities[0].providerId) {
