@@ -48,7 +48,7 @@ export class UpdateServiceDto {
       businessProviderId: number;
   }
   
-export class CreateLocationServiceDto {
+export class UpdateLocationServiceDto {
     @IsString()
     name: string;
 
@@ -56,8 +56,8 @@ export class CreateLocationServiceDto {
     @IsOptional()
     description?: string;
 
-    @IsNumber({ maxDecimalPlaces: 2 })
-    pricePerHour: number;
+    @IsDecimal()
+    pricePerHour: any;
 
     @IsString()
     @IsOptional()
