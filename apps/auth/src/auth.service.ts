@@ -19,18 +19,21 @@ export class AuthService {
       if(user){
         throw new UnauthorizedException('User already exists');
       }
-      
+
       const otp = await this.otpGenerator();
       await this.cacheManager.set(`register-otp-${phoneNumber}`, otp, 300 * 1000);
 
       // Send OTP to user's phone number
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
       const client = twilio(accountSid, authToken);
 
       const message = await client.messages.create({
-        body: `Your OTP is ${otp}`,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        // body: `Your OTP is ${otp}`,
+        body: `Your XUMAN.ai verification code is ${otp}. 
+It will expire in 5 minutes. Do not share this code with anyone.`,
+        messagingServiceSid: messagingServiceSid,
         to: phoneNumber,
       });
 
@@ -93,11 +96,14 @@ export class AuthService {
       // Send OTP to user's phone number
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
       const client = twilio(accountSid, authToken);
 
       const message = await client.messages.create({
-        body: `Your login OTP is ${otp}`,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        // body: `Your OTP is ${otp}`,
+        body: `Use ${otp} as your XUMAN.ai login code. 
+This code will expire in 5 minutes. Never share it with anyone.`,
+        messagingServiceSid: messagingServiceSid,
         to: phoneNumber,
       });
 
