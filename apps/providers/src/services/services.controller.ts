@@ -18,6 +18,11 @@ export class ServicesController {
     return this.servicesService.createForLocation(body);
   }
 
+  @Post('locations')
+  async createForLocations(@Body() body: CreateLocationServiceDto[]) {
+    return this.servicesService.createForLocations(body);
+  }
+
   @Post('availability')
   async createAvailability(@Body() body: CreateAvailabilityDto[]) {
     return this.servicesService.createAvailability(body);

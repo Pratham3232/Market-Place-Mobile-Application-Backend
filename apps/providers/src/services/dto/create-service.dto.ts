@@ -54,7 +54,8 @@ export class CreateLocationServiceDto {
     @IsOptional()
     description?: string;
 
-    @IsDecimal()
+    // @IsDecimal()
+    @IsNumber()
     pricePerHour: any;
 
     @IsString()
