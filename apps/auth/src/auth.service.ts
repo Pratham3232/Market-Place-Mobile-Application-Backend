@@ -16,40 +16,27 @@ export class AuthService {
   async signupLogin(phoneNumber: string) {
     try{
       const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+      const client = twilio(accountSid, authToken);
+
+      const otp = await this.otpGenerator();
+      await this.cacheManager.set(`auth-otp-${phoneNumber}`, otp, 300 * 1000);
       if(!user){
-        const otp = await this.otpGenerator();
-        await this.cacheManager.set(`auth-otp-${phoneNumber}`, otp, 300 * 1000);
-
-        // Send OTP to user's phone number
-        const accountSid = process.env.TWILIO_ACCOUNT_SID;
-        const authToken = process.env.TWILIO_AUTH_TOKEN;
-        const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-        const client = twilio(accountSid, authToken);
-
         client.messages.create({
-          body: `Your XUMAN.ai verification code is ${otp}. 
-  It will expire in 5 minutes. Do not share this code with anyone.`,
+          body: `Your XUMAN.ai verification code is ${otp}. It will expire in 5 minutes. Do not share this code with anyone.`,
           messagingServiceSid: messagingServiceSid,
           to: phoneNumber,
-        });
-        
+        }); 
       }else{
-        const otp = await this.otpGenerator();
-        await this.cacheManager.set(`auth-otp-${phoneNumber}`, otp, 300 * 1000);
-
-        // Send OTP to user's phone number
-        const accountSid = process.env.TWILIO_ACCOUNT_SID;
-        const authToken = process.env.TWILIO_AUTH_TOKEN;
-        const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-        const client = twilio(accountSid, authToken);
-
         client.messages.create({
-          body: `Use ${otp} as your XUMAN.ai login code. 
-  This code will expire in 5 minutes. Never share it with anyone.`,
+          body: `Use ${otp} as your XUMAN.ai login code. This code will expire in 5 minutes. Never share it with anyone.`,
           messagingServiceSid: messagingServiceSid,
           to: phoneNumber,
         });
       }
+      
       return {
           success: true,
           message: 'OTP sent successfully',
