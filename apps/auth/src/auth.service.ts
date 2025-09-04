@@ -14,7 +14,12 @@ export class AuthService {
   ) { }
 
   async signupLogin(phoneNumber: string) {
-    try{
+    try {
+      
+      if (await this.cacheManager.get(`auth-otp-block-${phoneNumber}`)) {
+        throw new Error('Too many OTP requests. Please try again later.');
+      }
+
       const user = await this.userService.getUserByPhoneNumber(phoneNumber);
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -23,7 +28,25 @@ export class AuthService {
 
       const otp = await this.otpGenerator();
       await this.cacheManager.set(`auth-otp-${phoneNumber}`, otp, 300 * 1000);
-      if(!user){
+
+      const countKey = `auth-otp-req-count-${phoneNumber}`;
+      let currentCount = await this.cacheManager.get<number>(countKey);
+
+      if (!currentCount) {
+        // first request
+        currentCount = 1;
+        await this.cacheManager.set(countKey, currentCount, 300 * 1000);
+      } else {
+        currentCount++;
+        await this.cacheManager.set(countKey, currentCount, 300 * 1000);
+      }
+
+      if (currentCount == 3) {
+        await this.cacheManager.set(`auth-otp-block-${phoneNumber}`, true, 120 * 60 * 1000);
+        // throw new Error('Too many OTP requests. Please try again later.');
+      }
+
+      if (!user) {
         client.messages.create({
           body: `Your XUMAN.ai verification code is ${otp}. It will expire in 5 minutes. Do not share this code with anyone.`,
           messagingServiceSid: messagingServiceSid,
@@ -36,12 +59,12 @@ export class AuthService {
           to: phoneNumber,
         });
       }
-      
+
       return {
-          success: true,
-          message: 'OTP sent successfully',
-        };
-    }catch(err){
+        success: true,
+        message: 'OTP sent successfully',
+      };
+    } catch (err) {
       console.error(err);
       return {
         success: false,
