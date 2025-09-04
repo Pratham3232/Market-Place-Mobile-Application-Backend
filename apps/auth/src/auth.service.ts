@@ -13,6 +13,84 @@ export class AuthService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) { }
 
+  async signupLogin(phoneNumber: string) {
+    try{
+      const user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      if(!user){
+        const otp = await this.otpGenerator();
+        await this.cacheManager.set(`auth-otp-${phoneNumber}`, otp, 300 * 1000);
+
+        // Send OTP to user's phone number
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+        const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+        const client = twilio(accountSid, authToken);
+
+        client.messages.create({
+          body: `Your XUMAN.ai verification code is ${otp}. 
+  It will expire in 5 minutes. Do not share this code with anyone.`,
+          messagingServiceSid: messagingServiceSid,
+          to: phoneNumber,
+        });
+        
+      }else{
+        const otp = await this.otpGenerator();
+        await this.cacheManager.set(`auth-otp-${phoneNumber}`, otp, 300 * 1000);
+
+        // Send OTP to user's phone number
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+        const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+        const client = twilio(accountSid, authToken);
+
+        client.messages.create({
+          body: `Use ${otp} as your XUMAN.ai login code. 
+  This code will expire in 5 minutes. Never share it with anyone.`,
+          messagingServiceSid: messagingServiceSid,
+          to: phoneNumber,
+        });
+      }
+      return {
+          success: true,
+          message: 'OTP sent successfully',
+        };
+    }catch(err){
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to send OTP',
+      };
+    }
+  }
+
+  async verifyOtp(phoneNumber: string, otp: string) {
+    try {
+      const cachedOtp = await this.cacheManager.get<string>(`auth-otp-${phoneNumber}`)
+      if (!cachedOtp) {
+        throw new Error('OTP expired or not found');
+      }
+      if (cachedOtp !== otp) {
+        throw new Error('Invalid OTP');
+      }
+      await this.cacheManager.del(`auth-otp-${phoneNumber}`);
+
+      let user = await this.userService.getUserByPhoneNumber(phoneNumber);
+      if(!user){
+        user = await this.userService.createUser({ phoneNumber, roles: [] });
+      }
+
+      return {
+        success: true,
+        data: user
+      }
+    } catch (err) {
+      return { 
+        success: false, 
+        message: err.message 
+      };
+    }
+  }
+
   async sendSignUpOtp(phoneNumber: string) {
     try {
       const user = await this.userService.getUserByPhoneNumber(phoneNumber);
