@@ -34,6 +34,16 @@ export class AuthController {
     return this.authService.verifyLoginOtp(body.phoneNumber, body.otp);
   }
 
+  @Post('signup-login')
+  async signupLogin(@Body() body: { phoneNumber: string }) {
+    return this.authService.signupLogin(body.phoneNumber);
+  }
+
+  @Post('signup-login-verify')
+  async signupLoginVerification(@Body() body: { otp: string; phoneNumber: string }) {
+    return this.authService.verifyOtp(body.phoneNumber, body.otp);
+  }
+
   @Post('logout')
   async logout(@Headers('authorization') token: string) {
     if (!token) {
