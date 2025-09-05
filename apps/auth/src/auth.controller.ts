@@ -44,6 +44,11 @@ export class AuthController {
     return this.authService.verifyOtp(body.phoneNumber, body.otp);
   }
 
+  @Post('remove-block')
+  async removeBlock(@Body() body: { phoneNumber: string }) {
+    return this.authService.removeBlock(body.phoneNumber);
+  }
+
   @Post('logout')
   async logout(@Headers('authorization') token: string) {
     if (!token) {
