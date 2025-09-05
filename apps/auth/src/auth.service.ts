@@ -82,7 +82,7 @@ export class AuthService {
   }
 
   async verifyOtp(phoneNumber: string, otp: string) {
-    try {     
+    try {
       const cachedOtp = await this.cacheManager.get<string>(`auth-otp-${phoneNumber}`)
       if (!cachedOtp) {
         throw new Error('OTP expired or not found');
@@ -105,7 +105,7 @@ export class AuthService {
         success: true,
         data: token,
         isNewUser: !userExists,
-        roles: userExists? user.roles[0] : []
+        roles: user.roles.length > 0 ? user.roles[0] : []
       }
     } catch (err) {
       return { 
