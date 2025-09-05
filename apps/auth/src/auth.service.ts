@@ -21,7 +21,7 @@ export class AuthService {
       }
 
       if (phoneNumber == '+11111111111'){
-        await this.cacheManager.set(`auth-otp-${phoneNumber}`, '1234', 300 * 1000);
+        await this.cacheManager.set(`auth-otp-${phoneNumber}`, '1234', 5 * 60 * 1000);
         return {
           success: true,
           message: 'OTP sent successfully',
@@ -83,21 +83,15 @@ export class AuthService {
 
   async verifyOtp(phoneNumber: string, otp: string) {
     try {
-      if (phoneNumber == '+11111111111'){
-        if(otp !== '1234'){
-          throw new Error('Invalid OTP');
-        }else{
-          await this.cacheManager.del(`auth-otp-${phoneNumber}`);
-        }
-      }else{
-        const cachedOtp = await this.cacheManager.get<string>(`auth-otp-${phoneNumber}`)
-        if (!cachedOtp) {
-          throw new Error('OTP expired or not found');
-        }
-        if (cachedOtp !== otp) {
-          throw new Error('Invalid OTP');
-        }
+      
+      const cachedOtp = await this.cacheManager.get<string>(`auth-otp-${phoneNumber}`)
+      if (!cachedOtp) {
+        throw new Error('OTP expired or not found');
       }
+      if (cachedOtp !== otp) {
+        throw new Error('Invalid OTP');
+      }
+
       await this.cacheManager.del(`auth-otp-${phoneNumber}`);
 
       let user = await this.userService.getUserByPhoneNumber(phoneNumber);
