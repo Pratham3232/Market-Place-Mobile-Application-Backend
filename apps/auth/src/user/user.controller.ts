@@ -8,11 +8,12 @@ import { MessagePattern } from '@nestjs/microservices';
 export class UserController {
     constructor(private readonly userService: UserService) { }
     @Get(':id')
-    // @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard)
     async getUser(@Param('id') id: number): Promise<User | null> {
         return this.userService.getUser(+id);
     }
 
+    @UseGuards(AuthGuard)
     @Get(':id/:role')
     async getUserByRole(@Param('id') id: string, @Param('role') role: UserRole){
         return this.userService.getUserByIdAndRole(id, role);
@@ -41,6 +42,7 @@ export class UserController {
     }
 
     @Get()
+    @UseGuards(AuthGuard)
     async getAllUsers(): Promise<User[]> {
         return this.userService.getAllUsers();
     }

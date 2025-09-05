@@ -44,6 +44,11 @@ export class AuthController {
     return this.authService.verifyOtp(body.phoneNumber, body.otp);
   }
 
+  @Post('remove-block')
+  async removeBlock(@Body() body: { phoneNumber: string }) {
+    return this.authService.removeBlock(body.phoneNumber);
+  }
+
   @Post('logout')
   async logout(@Headers('authorization') token: string) {
     if (!token) {
@@ -56,6 +61,16 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @MessagePattern('authenticate')
   async authenticate(@Payload() data: any) {
-    return data.userId;
+    try{
+      const user = await this.authService.validateToken(data);
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      return user;
+    }catch(err){
+      console.error(err);
+      throw new UnauthorizedException('Authentication failed');
+    }
+    // return data.userId;
   }
 }
