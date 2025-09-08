@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { CreateLocationServiceDto, CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
+import { AuthGuard } from '../../../auth/src/guards/auth.guard';
 
 @Controller('services')
 export class ServicesController {
@@ -28,19 +29,34 @@ export class ServicesController {
     return this.servicesService.createAvailability(body);
   }
 
-  // @Post()
-  // async create(@Body() createServiceDto: CreateServiceDto) {
-  //   return this.servicesService.create(createServiceDto);
-  // }
-
   @Get()
+  @UseGuards(AuthGuard)
   async findAll() {
     return this.servicesService.findAll();
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.servicesService.findOne(+id);
+  @Get(':id/:serviceProvider')
+  @UseGuards(AuthGuard)
+  async findOne(@Param('id') id: string, @Param('serviceProvider') serviceProvider: string) {
+    return this.servicesService.findAllProviderService(id, serviceProvider);
+  }
+
+  @Get('location/:id')
+  @UseGuards(AuthGuard)
+  async findLocation(@Param('id') id: string) {
+    return this.servicesService.findLocationService(id);
+  }
+
+  @Get('availability')
+  @UseGuards(AuthGuard)
+  async findAllAvailability() {
+    return this.servicesService.findAllAvailability();
+  }
+
+  @Get('availability/:id/:serviceProvider')
+  @UseGuards(AuthGuard)
+  async findAvailability(@Param('id') id: string, @Param('serviceProvider') serviceProvider: string) {
+    return this.servicesService.findAvailability(id, serviceProvider);
   }
 
   @Patch(':id')

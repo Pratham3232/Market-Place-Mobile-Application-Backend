@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, UseGuards } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
+import { AuthGuard } from '../../../auth/src/guards/auth.guard';
 
 @Controller('business')
 export class BusinessController {
@@ -13,11 +14,13 @@ export class BusinessController {
   }
 
   @Get()
+  @UseGuards(AuthGuard)
   findAll() {
     return this.businessService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(AuthGuard)
   findOne(@Param('id') id: string) {
     return this.businessService.findOne(id);
   }
