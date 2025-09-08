@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UnauthorizedException, Headers, UseGuards, Logger } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { AuthGuard } from './guards/auth.guard';
+import { AuthGuard } from '@app/common';
 import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 
 @Controller('auth')
@@ -9,6 +9,7 @@ export class AuthController {
   constructor(private authService: AuthService) { }
 
   @Post('register')
+  @UseGuards(AuthGuard)
   async register(@Body() body: RegisterUserDto) {
     return this.authService.register(body);
   }
@@ -67,8 +68,7 @@ export class AuthController {
       throw new UnauthorizedException(error.message);
     }
   }
-
-  @UseGuards(AuthGuard)
+  
   @MessagePattern('authenticate')
   async authenticate(@Payload() data: any) {
     try{
@@ -82,5 +82,31 @@ export class AuthController {
       throw new UnauthorizedException('Authentication failed');
     }
     // return data.userId;
+  }
+
+  @MessagePattern('validate_token')
+  async validateTokenHandler(@Payload() data: { token: string }) {
+    try {
+      const userId = await this.authService.validateToken(data.token);
+      if (!userId) {
+        throw new UnauthorizedException('Invalid token');
+      }
+      const roles = await this.authService.getUserRoles(Number(userId));
+      return { userId, roles };
+    } catch (err) {
+      throw new UnauthorizedException('Authentication failed');
+    }
+  }
+
+  @MessagePattern('validate_roles')
+  async validateRolesHandler(@Payload() data: { userId: number, requiredRoles: string[] }) {
+    try {
+      const userRoles = await this.authService.getUserRoles(Number(data.userId));
+      // Compare roles as strings to avoid type mismatch
+      const hasAccess = data.requiredRoles.some(role => userRoles.map(r => String(r)).includes(String(role)));
+      return hasAccess;
+    } catch (err) {
+      return false;
+    }
   }
 }

@@ -4,6 +4,7 @@ import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from './user/user.service';
 import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
+import { AccessBasedRole } from '@prisma/client';
 import * as twilio from 'twilio';
 
 @Injectable()
@@ -195,7 +196,14 @@ It will expire in 5 minutes. Do not share this code with anyone.`,
   async register(registerUserDto: RegisterUserDto) {
     try {
       const user = await this.userService.registerOrUpdateUserRole(registerUserDto);
-      return this.generateToken(user.id);
+      if (!user){
+        throw new Error('User registration failed');
+      }
+      return {
+        success: true,
+        message: 'User registered successfully',
+        data: user
+      }
     } catch (err) {
       return { success: false, message: err.message };
     }
@@ -321,6 +329,42 @@ This code will expire in 5 minutes. Never share it with anyone.`,
       throw new UnauthorizedException('Token not found in cache');
     }
     return userId;
+  }
+
+  async getUserRoles(userId: number) {
+    const user = await this.userService.getUser(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return user.roles;
+  }
+
+  async hasRole(userId: number, requiredRole: AccessBasedRole) {
+    const user = await this.userService.getUser(userId);
+    if (!user) {
+      return false;
+    }
+
+    switch (requiredRole) {
+      case AccessBasedRole.SOLO_PROVIDER:
+        return user.roles.includes('SOLO_PROVIDER');
+      case AccessBasedRole.BUSINESS_PROVIDER:
+        return user.roles.includes('BUSINESS_PROVIDER');
+      case AccessBasedRole.LOCATION_PROVIDER:
+        return user.roles.includes('LOCATION_PROVIDER');
+      case AccessBasedRole.SUPER_ADMIN:
+        return user.roles.includes('SUPER_ADMIN');
+      case AccessBasedRole.MEMBER:
+        return user.roles.includes('MEMBER');
+      case AccessBasedRole.USER:
+        return true; // All authenticated users have USER access
+      case AccessBasedRole.ADMIN:
+        return user.roles.includes('SUPER_ADMIN'); // SUPER_ADMIN inherits ADMIN privileges
+      case AccessBasedRole.SYSTEM:
+        return user.roles.includes('SUPER_ADMIN'); // Only SUPER_ADMIN can access system features
+      default:
+        return false;
+    }
   }
 
   async logout(token: string) {
