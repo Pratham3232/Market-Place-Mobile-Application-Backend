@@ -268,25 +268,68 @@ This code will expire in 5 minutes. Never share it with anyone.`,
   }
 
   private async generateToken(userId: number) {
-    const token = uuidv4();
-    const expiresIn = 3600;
-    await this.cacheManager.set(token, userId, expiresIn * 1000);
+    const accessToken = uuidv4();
+    const refreshToken = uuidv4();
+    const accessTokenExpiresIn = 30 * 60; // 30 minutes
+    const refreshTokenExpiresIn = 7 * 24 * 60 * 60; // 7 days
+
+    // Store access token in cache
+    await this.cacheManager.set(accessToken, userId, accessTokenExpiresIn * 1000);
+    
+    // Store refresh token in database
+    await this.userService.createRefreshToken({
+      token: refreshToken,
+      userId,
+      expiresAt: new Date(Date.now() + refreshTokenExpiresIn * 1000)
+    });
+
     return {
-      access_token: token,
-      expires_in: expiresIn,
-      // user_id: userId
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: accessTokenExpiresIn,
+      refresh_token_expires_in: refreshTokenExpiresIn
     };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    try {
+      const tokenData = await this.userService.getRefreshToken(refreshToken);
+      
+      if (!tokenData || tokenData.expiresAt < new Date()) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+
+      // Generate new access token
+      const accessToken = uuidv4();
+      const accessTokenExpiresIn = 30 * 60; // 30 minutes
+
+      await this.cacheManager.set(accessToken, tokenData.userId, accessTokenExpiresIn * 1000);
+
+      return {
+        access_token: accessToken,
+        expires_in: accessTokenExpiresIn
+      };
+    } catch (err) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async validateToken(token: string) {
     const userId = await this.cacheManager.get<string>(token);
     if (!userId) {
-      throw new UnauthorizedException('Invalid token');
+      console.log('Token not found in cache');
+      throw new UnauthorizedException('Token not found in cache');
     }
     return userId;
   }
 
   async logout(token: string) {
+    // Delete access token from cache
     await this.cacheManager.del(token);
+  }
+
+  async logoutAll(userId: number) {
+    // Delete all refresh tokens for the user
+    await this.userService.deleteAllRefreshTokens(userId);
   }
 }
