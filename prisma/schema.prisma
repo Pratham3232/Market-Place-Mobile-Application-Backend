@@ -29,6 +29,7 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([userId])
 }
 
 model Provider {
@@ -134,8 +135,7 @@ model LocationService {
   LocationProvider  LocationProvider? @relation(fields: [locationProviderId], references: [id], onDelete: Cascade)
   locationProviderId Int?
 
-  @@index([category, wifiAvailability, sessionSize])
-  @@index([locationProviderId, isActive])
+  @@index([category, sessionSize, locationProviderId, isActive])
 }
 
 model LocationMember {
@@ -212,6 +212,17 @@ enum UserRole {
   SOLO_PROVIDER
   BUSINESS_PROVIDER
   LOCATION_PROVIDER
+}
+
+enum AccessBasedRole {
+  SOLO_PROVIDER
+  BUSINESS_PROVIDER
+  LOCATION_PROVIDER
+  USER
+  ADMIN
+  SYSTEM
+  MEMBER
+  SUPER_ADMIN
 }
 
 enum BusinesMemberRole {
