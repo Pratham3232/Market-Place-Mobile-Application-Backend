@@ -18,6 +18,14 @@ export class UpdateServiceDto {
   @IsOptional()
   category?: string;
 
+  @IsInt()
+  @IsOptional()
+  ageMin?: number;
+
+  @IsInt()
+  @IsOptional()
+  ageMax?: number;
+
   @IsArray()
   @IsEnum(ServiceProviderOptions, { each: true })
   @IsOptional()
@@ -44,8 +52,12 @@ export class UpdateServiceDto {
   providerId?: number;
 
   @IsInt()
-      @IsOptional()
-      businessProviderId: number;
+  @IsOptional()
+  businessProviderId?: number;
+
+  @IsInt()
+  @IsOptional()
+  serviceCategoryId?: number;
   }
   
 export class UpdateLocationServiceDto {

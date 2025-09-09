@@ -26,6 +26,8 @@ model Provider {
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   name               String
   email              String
+  gender             Gender?
+  pronouns           Pronouns?
   dateOfBirth        DateTime?
   bio                String?
   address            String?
@@ -60,6 +62,14 @@ model BusinessProvider {
   state          String?
   zipCode        String?
   businessEmail  String?
+  gender         Gender?
+  pronouns       Pronouns?
+  availabilityModification Boolean @default(false)
+  serviceModification     Boolean @default(false)
+  deliveryOptionChoices   Boolean @default(false)
+  bookingApprovalRequired  Boolean @default(false)
+  changeCategoryOption Boolean @default(false)
+  priceModificationOption Boolean @default(false)
   adminName      String?
   address        String?
   createdAt      DateTime         @default(now())
@@ -77,6 +87,8 @@ model BusinessMember {
   email              String            @unique
   phoneNumber        String            @unique
   role               BusinesMemberRole
+  gender             Gender?
+  pronouns           Pronouns?
   isActive           Boolean           @default(true)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -91,6 +103,8 @@ model LocationProvider {
   name           String
   email          String?
   phone          String?
+  gender         Gender?
+  pronouns       Pronouns?
   contactPerson  String?
   website        String?
   fullAddress    String?
@@ -123,6 +137,9 @@ model LocationService {
   LocationProvider  LocationProvider? @relation(fields: [locationProviderId], references: [id], onDelete: Cascade)
   locationProviderId Int?
 
+  serviceCategoryId Int?
+  serviceCategory   ServiceCategory?  @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
+
   @@index([category, wifiAvailability, sessionSize])
   @@index([locationProviderId, isActive])
 }
@@ -133,6 +150,8 @@ model LocationMember {
   name               String
   email              String            @unique
   phoneNumber        String            @unique
+  gender             Gender?
+  pronouns           Pronouns?
   role               BusinesMemberRole
   isActive           Boolean           @default(true)
   createdAt          DateTime          @default(now())
@@ -141,12 +160,25 @@ model LocationMember {
   businessProviderId Int?
 }
 
+model ServiceCategory {
+  id            Int @id @default(autoincrement())
+  categoryName  String @unique
+  activity      String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     Int?
+  services      Service[]
+  locationServices LocationService[]
+}
+
 model Service {
   id              Int      @id @default(autoincrement())
   name            String
   description     String   @default("")
   pricePerHour    Decimal  @db.Decimal(10, 2)
   category        String?  @default("")
+  ageMin          Int?
+  ageMax          Int?
   serviceProviderOptions ServiceProviderOptions[]
   bookingPreference BookingPreference?
   subCategory     String?
@@ -159,10 +191,13 @@ model Service {
   providerId Int?
   provider   Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
+  serviceCategoryId Int?
+  serviceCategory   ServiceCategory? @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
+
   businessProviderId Int?
   businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id], onDelete: Cascade)
 
-  @@index([category, subCategory])
+  @@index([category, subCategory, ageMin, ageMax])
   @@index([providerId, businessProviderId, isActive])
 }
 
@@ -231,4 +266,17 @@ enum BookingNotice {
   ONE_HOUR
   EIGHT_HOURS
   TWENTY_FOUR_HOURS
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Pronouns {
+  HE_HIM
+  SHE_HER
+  THEY_THEM
+  OTHER
 }
