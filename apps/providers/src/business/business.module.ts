@@ -14,7 +14,7 @@ import { PrismaModule } from '../../../../libs/common/src/prisma/prisma.module';
         name: AUTH_SERVICE,
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://localhost:5672'],
+          urls: ['amqp://stgrabbitmq:5672'],
           queue: AUTH_QUEUE,
           queueOptions: { durable: false },
         },
