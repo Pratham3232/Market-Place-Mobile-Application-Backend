@@ -4,7 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE, AUTH_QUEUE } from '@app/common';
 import { BusinessService } from './business.service';
 import { BusinessController } from './business.controller';
-import { PrismaModule } from '@app/common';
+import { PrismaModule } from '../../../../libs/common/src/prisma/prisma.module';
 
 @Module({
   imports: [

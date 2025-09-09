@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, UseGuards }
 import { SoloService } from './solo.service';
 import { CreateSoloDto } from './dto/create-solo.dto';
 import { UpdateSoloDto } from './dto/update-solo.dto';
-import { AuthGuard } from '@app/common';
+import { AuthGuard } from '../../../auth/src/guards/auth.guard';
 
 @Controller('solo')
 export class SoloController {
