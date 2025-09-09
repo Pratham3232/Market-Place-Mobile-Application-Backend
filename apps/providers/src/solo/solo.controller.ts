@@ -1,20 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
 import { SoloService } from './solo.service';
 import { CreateSoloDto } from './dto/create-solo.dto';
 import { UpdateSoloDto } from './dto/update-solo.dto';
-import { AuthGuard } from '../../../auth/src/guards/auth.guard';
 
 @Controller('solo')
 export class SoloController {
     constructor(private soloService: SoloService) { }
     
-    @UseGuards(AuthGuard)
     @Get()
     async getAll(){
         return this.soloService.findAll();
     }
 
-    @UseGuards(AuthGuard)
     @Get(':id')
     async getOne(@Param('id') id: string) {
         return this.soloService.findOne(id);
