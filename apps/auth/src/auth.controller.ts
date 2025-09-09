@@ -58,29 +58,9 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
-  @Post('refresh')
-  async refreshToken(@Body() body: { refresh_token: string }) {
-    try {
-      const result = await this.authService.refreshAccessToken(body.refresh_token);
-      return result;
-    } catch (error) {
-      throw new UnauthorizedException(error.message);
-    }
-  }
-
   @UseGuards(AuthGuard)
   @MessagePattern('authenticate')
   async authenticate(@Payload() data: any) {
-    try{
-      const user = await this.authService.validateToken(data);
-      if (!user) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      return user;
-    }catch(err){
-      console.error(err);
-      throw new UnauthorizedException('Authentication failed');
-    }
-    // return data.userId;
+    return data.userId;
   }
 }

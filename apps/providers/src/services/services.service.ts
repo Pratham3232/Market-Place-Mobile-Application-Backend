@@ -24,24 +24,6 @@ export class ServicesService {
     }
   }
 
-  async findLocationService(id: string) {
-    try {
-      let ID = Number(id);
-      const result = await this.prismaService.locationService.findUnique({
-        where: { id: ID }
-      });
-      return {
-        success: true,
-        data: result
-      };
-    } catch (err) {
-      return {
-        success: false,
-        message: err.message
-      };
-    }
-  }
-
   async create(services: CreateServiceDto[]) {
     try {
       // Check all providerIds are the same
@@ -233,59 +215,8 @@ export class ServicesService {
     }
   }
 
-  async findAllProviderService(id: string, serviceProvider: string) {
-    try {
-      let ID = Number(id);
-      let result: any;
-      switch (serviceProvider) {
-        case 'soloProvider':
-           result = this.prismaService.service.findMany({
-            where: {
-              providerId: ID
-            }
-          })
-        case 'businessProvider':
-           result = this.prismaService.service.findMany({
-            where: {
-              businessProviderId: ID
-            }
-          })
-        case 'locationProvider':
-           result = this.prismaService.locationService.findMany({
-            where: {
-              locationProviderId: ID
-            }
-          })
-      }
-      return {
-        success: true,
-        data: result
-      }
-    }catch(err){
-      return {
-        success: false,
-        message: err.message
-      };
-    }
-  }
-
-  async findAllAvailability() {
-    try {
-      const availabilities = await this.prismaService.availability.findMany();
-      return {
-        success: true,
-        data: availabilities
-      };
-    }catch(err) {
-      return {
-        success: false,
-        message: err.message
-      };
-    }
-  }
-
-  async findAvailability(id: string, serviceProvider: string) {
-    
+  findOne(id: number) {
+    return `This action returns a #${id} service`;
   }
 
   update(id: number, updateServiceDto: UpdateServiceDto) {

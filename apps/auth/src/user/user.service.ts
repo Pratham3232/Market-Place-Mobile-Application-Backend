@@ -149,28 +149,4 @@ export class UserService {
     async getAllUsers(): Promise<User[]> {
         return this.prisma.user.findMany();
     }
-
-    async createRefreshToken(data: { token: string; userId: number; expiresAt: Date }) {
-        return this.prisma.refreshToken.create({
-            data
-        });
-    }
-
-    async getRefreshToken(token: string) {
-        return this.prisma.refreshToken.findUnique({
-            where: { token }
-        });
-    }
-
-    async deleteRefreshToken(token: string) {
-        return this.prisma.refreshToken.delete({
-            where: { token }
-        });
-    }
-
-    async deleteAllRefreshTokens(userId: number) {
-        return this.prisma.refreshToken.deleteMany({
-            where: { userId }
-        });
-    }
 }
