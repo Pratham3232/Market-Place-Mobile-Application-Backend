@@ -6,15 +6,20 @@ import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import { AUTH_QUEUE } from '@app/common';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthModule);
+
+
+  const rabbitUrl = process.env.RABBITMQ_HOST as string;
 
   const configService = app.get(ConfigService)
   app.connectMicroservice({
     transport: Transport.RMQ,
     options: {
-      urls: ['amqp://stgrabbitmq:5672'],
+      urls: [rabbitUrl],
       queue: AUTH_QUEUE,
       queueOptions: {
         durable: false
