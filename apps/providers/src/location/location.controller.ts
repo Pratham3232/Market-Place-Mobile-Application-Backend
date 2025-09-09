@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, UseGuards }
 import { LocationService } from './location.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
-import { AuthGuard } from '@app/common';
+import { AuthGuard } from '../../../auth/src/guards/auth.guard';
 
 @Controller('location')
 export class LocationController {

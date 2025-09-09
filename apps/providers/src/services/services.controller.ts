@@ -3,7 +3,7 @@ import { ServicesService } from './services.service';
 import { CreateLocationServiceDto, CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
-import { AuthGuard } from '@app/common';
+import { AuthGuard } from '../../../auth/src/guards/auth.guard';
 
 @Controller('services')
 export class ServicesController {
