@@ -6,15 +6,17 @@ import { BusinessService } from './business.service';
 import { BusinessController } from './business.controller';
 import { PrismaModule } from '../../../../libs/common/src/prisma/prisma.module';
 
+const rabbitUrl = process.env.RABBITMQ_HOST as string;
+
 @Module({
   imports: [
     PrismaModule,
     ClientsModule.register([
-      {
+      {   
         name: AUTH_SERVICE,
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://stgrabbitmq:5672'],
+          urls: [rabbitUrl],
           queue: AUTH_QUEUE,
           queueOptions: { durable: false },
         },

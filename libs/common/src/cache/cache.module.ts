@@ -3,9 +3,6 @@ import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
 import { Module, Logger } from '@nestjs/common';
 import { CacheableMemory } from 'cacheable';
 import Redis from 'ioredis';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
 
 @Module({
     imports: [
@@ -13,7 +10,6 @@ dotenv.config();
             useFactory: async () => {
                 const logger = new Logger('CacheModule');
                 const redisUrl = process.env.REDIS_HOST as string;
-
                 try {
                     const redis = new Redis(redisUrl);
                     await redis.ping();
