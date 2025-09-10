@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, ParseIntPipe, Patch } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User, UserRole } from '@prisma/client';
 import { AuthGuard } from '../guards/auth.guard';
@@ -7,6 +7,12 @@ import { MessagePattern } from '@nestjs/microservices';
 @Controller('user')
 export class UserController {
     constructor(private readonly userService: UserService) { }
+
+    @Get('/xpiScore/:id')
+    async getXpiScore(@Param('id') id: string) {
+        return this.userService.getXpiScore(id);
+    }
+    
     @Get(':id')
     // @UseGuards(AuthGuard)
     async getUser(@Param('id') id: number): Promise<User | null> {
@@ -24,6 +30,14 @@ export class UserController {
         @Body() userData: { name?: string; email?: string; password?: string }
     ): Promise<User> {
         return this.userService.updateUser(+id, userData);
+    }
+
+    @Patch(':id')
+    async patchUser(
+        @Param('id') id: string,
+        @Body() userData: { xpiId?: number }
+    ): Promise<User> {
+        return this.userService.patchUser(id, userData);
     }
 
     @Delete(':id')
