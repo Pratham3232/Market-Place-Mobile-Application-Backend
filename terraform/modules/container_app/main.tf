@@ -19,6 +19,7 @@ variable "twilio_account_sid" {}
 variable "twilio_auth_token" {}
 variable "twilio_messaging_service_sid" {}
 variable "twilio_phone_number" {}
+
   
 provider "azurerm" {
   features {}
