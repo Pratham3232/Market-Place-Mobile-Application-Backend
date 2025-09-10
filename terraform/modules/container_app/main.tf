@@ -20,6 +20,9 @@ variable "twilio_auth_token" {}
 variable "twilio_messaging_service_sid" {}
 variable "twilio_phone_number" {}
 
+variable "redis_host" {}
+variable "rabbitmq_host" {}
+
   
 provider "azurerm" {
   features {}
@@ -71,6 +74,14 @@ resource "azurerm_container_app" "this" {
     name  = "twilio-phone-number"
     value = var.twilio_phone_number
   }
+  secret {
+    name  = "redis-url"
+    value = var.redis_host
+  }
+  secret {
+    name  = "rabbitmq-url"
+    value = var.rabbitmq_host
+  }
   template {
     container {
       name   = var.name
@@ -100,6 +111,19 @@ resource "azurerm_container_app" "this" {
           TWILIO_AUTH_TOKEN            = "twilio-auth-token"
           TWILIO_MESSAGING_SERVICE_SID = "twilio-messaging-service-sid"
           TWILIO_PHONE_NUMBER          = "twilio-phone-number"
+          REDIS_HOST                   = "redis-url"
+          RABBITMQ_HOST                = "rabbitmq-url"
+        } : {}
+
+        content {
+          name        = env.key
+          secret_name = env.value
+        }
+      }
+      dynamic "env" {
+        for_each = var.name == "stgproviders" ? {
+          REDIS_HOST                   = "redis-url"
+          RABBITMQ_HOST                = "rabbitmq-url"
         } : {}
 
         content {

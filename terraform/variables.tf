@@ -23,5 +23,5 @@ variable "providers_image" {}
 variable "rabbitmq_image" {}
 variable "redis_image" {}
 
-variable "redis_url" {}
-variable "rabbitmq_url" {}
+variable "redis_host" {}
+variable "rabbitmq_host" {}
