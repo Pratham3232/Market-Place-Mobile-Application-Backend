@@ -18,6 +18,8 @@ module "auth" {
   twilio_auth_token            = var.twilio_auth_token
   twilio_messaging_service_sid = var.twilio_messaging_service_sid
   twilio_phone_number          = var.twilio_phone_number
+  redis_host                   = var.redis_host
+  rabbitmq_host                = var.rabbitmq_host
   env_vars = {
     RABBITMQ_HOST = var.rabbitmq_container
     REDIS_HOST    = var.redis_container
@@ -44,6 +46,9 @@ module "providers" {
   twilio_auth_token            = var.twilio_auth_token
   twilio_messaging_service_sid = var.twilio_messaging_service_sid
   twilio_phone_number          = var.twilio_phone_number
+  redis_host                   = var.redis_host
+  rabbitmq_host                = var.rabbitmq_host
+
   env_vars = {
     RABBITMQ_HOST = var.rabbitmq_container
     REDIS_HOST    = var.redis_container
@@ -69,6 +74,8 @@ module "rabbitmq" {
   twilio_auth_token            = var.twilio_auth_token
   twilio_messaging_service_sid = var.twilio_messaging_service_sid
   twilio_phone_number          = var.twilio_phone_number
+  redis_host                   = var.redis_host
+  rabbitmq_host                = var.rabbitmq_host
 }
 
 # Redis
@@ -81,7 +88,7 @@ module "redis" {
   acr_name                     = var.acr_name
   cpu                          = 0.5
   memory                       = "1Gi"
-  enable_ingress               = false
+  enable_ingress               = true
   target_port                  = 6379
   min_replicas                 = 1
   max_replicas                 = 2
@@ -89,5 +96,7 @@ module "redis" {
   twilio_auth_token            = var.twilio_auth_token
   twilio_messaging_service_sid = var.twilio_messaging_service_sid
   twilio_phone_number          = var.twilio_phone_number
+  redis_host                   = var.redis_host
+  rabbitmq_host                = var.rabbitmq_host
 }
 
