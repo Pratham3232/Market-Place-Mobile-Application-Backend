@@ -20,6 +20,8 @@ module "auth" {
   twilio_phone_number          = var.twilio_phone_number
   redis_host                   = var.redis_host
   rabbitmq_host                = var.rabbitmq_host
+  xpi_base_url                 = var.xpi_base_url
+  AZURE_STORAGE_CONNECTION_STRING = var.AZURE_STORAGE_CONNECTION_STRING
   env_vars = {
     RABBITMQ_HOST = var.rabbitmq_container
     REDIS_HOST    = var.redis_container
@@ -48,6 +50,8 @@ module "providers" {
   twilio_phone_number          = var.twilio_phone_number
   redis_host                   = var.redis_host
   rabbitmq_host                = var.rabbitmq_host
+  xpi_base_url                 = var.xpi_base_url
+  AZURE_STORAGE_CONNECTION_STRING = var.AZURE_STORAGE_CONNECTION_STRING
 
   env_vars = {
     RABBITMQ_HOST = var.rabbitmq_container
@@ -76,6 +80,8 @@ module "rabbitmq" {
   twilio_phone_number          = var.twilio_phone_number
   redis_host                   = var.redis_host
   rabbitmq_host                = var.rabbitmq_host
+  xpi_base_url                 = var.xpi_base_url
+  AZURE_STORAGE_CONNECTION_STRING = var.AZURE_STORAGE_CONNECTION_STRING
 }
 
 # Redis
@@ -98,5 +104,31 @@ module "redis" {
   twilio_phone_number          = var.twilio_phone_number
   redis_host                   = var.redis_host
   rabbitmq_host                = var.rabbitmq_host
+  xpi_base_url                 = var.xpi_base_url
+  AZURE_STORAGE_CONNECTION_STRING = var.AZURE_STORAGE_CONNECTION_STRING
 }
+
+module "stgstorage" {
+  source                       = "./modules/container_app"
+  name                         = var.storage_container
+  image                        = var.storage_image
+  rg_name                      = var.rg_name
+  container_app_env_name       = var.container_app_env_name
+  acr_name                     = var.acr_name
+  cpu                          = 0.5
+  memory                       = "1Gi"
+  enable_ingress               = true
+  target_port                  = 3000
+  min_replicas                 = 1
+  max_replicas                 = 2
+  twilio_account_sid           = var.twilio_account_sid
+  twilio_auth_token            = var.twilio_auth_token
+  twilio_messaging_service_sid = var.twilio_messaging_service_sid
+  twilio_phone_number          = var.twilio_phone_number
+  redis_host                   = var.redis_host
+  rabbitmq_host                = var.rabbitmq_host
+  xpi_base_url                 = var.xpi_base_url
+  AZURE_STORAGE_CONNECTION_STRING = var.AZURE_STORAGE_CONNECTION_STRING
+}
+
 
