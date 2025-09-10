@@ -58,6 +58,57 @@ export class UserService {
         }
     }
 
+    async patchUser(id: string, userData: { xpiId?: number }): Promise<User> {
+        return this.prisma.user.update({
+            where: { id: Number(id) },
+            data: userData,
+        });
+    }
+
+    async getXpiScore(id: string){
+        try{
+            const user = await this.prisma.user.findFirst({
+                where: { id: Number(id) },
+                select: { xpiId: true }
+            })
+
+            if(!user || !user.xpiId){
+                throw new Error('user not found or xpiId not set');
+            }
+
+            // Fetch XPI score from external service
+            const BaseUrl = process.env.XPI_BASE_URL;
+            if(!BaseUrl){
+                throw new Error('XPI_BASE_URL not set in environment variables');
+            }
+            const xpiResponse = await fetch(`${BaseUrl}/traits/parent/${user.xpiId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer YOUR_XPI_API_KEY` // Replace with actual API key
+                }
+            });
+
+            if (!xpiResponse.ok) {
+                throw new Error(`${xpiResponse.statusText}`);
+            }
+
+            console.log("XPI Response Status:", JSON.stringify(xpiResponse));
+
+            const xpiData = await xpiResponse.json();
+
+            return {
+                status: true,
+                data: xpiData
+            }
+        }catch(err){
+            return {
+                status: false,
+                error: err.message || 'Error fetching XPI score'
+            }
+        }
+    }
+
     async getUserByPhoneNumber(phoneNumber: string): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { phoneNumber },
