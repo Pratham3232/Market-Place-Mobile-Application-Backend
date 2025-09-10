@@ -16,6 +16,14 @@ export class CreateServiceDto {
 	@IsOptional()
 	category?: string;
 
+	@IsInt()
+	@IsOptional()
+	ageMin?: number;
+
+	@IsInt()
+	@IsOptional()
+	ageMax?: number;
+
 	@IsArray()
 	@IsEnum(ServiceProviderOptions, { each: true })
 	@IsOptional()
@@ -38,12 +46,16 @@ export class CreateServiceDto {
 	isActive?: boolean;
 
 	@IsInt()
-    @IsOptional()
-	providerId: number;
+	@IsOptional()
+	providerId?: number;
 
-    @IsInt()
-    @IsOptional()
-    businessProviderId: number;
+	@IsInt()
+	@IsOptional()
+	businessProviderId?: number;
+
+	@IsInt()
+	@IsOptional()
+	serviceCategoryId?: number;
 }
 
 export class CreateLocationServiceDto {

@@ -1,4 +1,5 @@
-import { IsInt, IsOptional, IsString, IsBoolean, IsDateString, IsNumber, IsEmail } from 'class-validator';
+import { Gender, Pronouns } from '@prisma/client';
+import { IsInt, IsOptional, IsString, IsBoolean, IsDateString, IsNumber, IsEmail, IsEnum } from 'class-validator';
 
 export class CreateSoloDto {
 	@IsInt()
@@ -15,6 +16,14 @@ export class CreateSoloDto {
 	@IsOptional()
 	@IsDateString()
 	dateOfBirth?: Date;
+
+	@IsOptional()
+	@IsEnum(Gender)
+	gender?: Gender;
+
+	@IsOptional()
+	@IsEnum(Pronouns)
+	pronouns?: Pronouns;
 
 	@IsOptional()
 	@IsString()

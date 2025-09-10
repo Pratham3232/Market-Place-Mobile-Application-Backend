@@ -6,9 +6,10 @@ import { BusinessModule } from './business/business.module';
 import { LocationModule } from './location/location.module';
 import { PrismaModule } from '@app/common';
 import { ServicesModule } from './services/services.module';
+import { ServiceCategoryModule } from './service-category/service-category.module';
 
 @Module({
-  imports: [PrismaModule, SoloModule, BusinessModule, LocationModule, ServicesModule],
+  imports: [PrismaModule, SoloModule, BusinessModule, LocationModule, ServicesModule, ServiceCategoryModule],
   controllers: [ProvidersController],
   providers: [ProvidersService],
 })
