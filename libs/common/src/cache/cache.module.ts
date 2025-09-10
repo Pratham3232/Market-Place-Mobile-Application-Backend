@@ -9,8 +9,7 @@ import Redis from 'ioredis';
         NestCacheModule.registerAsync({
             useFactory: async () => {
                 const logger = new Logger('CacheModule');
-                const redisUrl = 'redis://localhost:6379';
-
+                const redisUrl = process.env.REDIS_HOST as string;
                 try {
                     const redis = new Redis(redisUrl);
                     await redis.ping();

@@ -4,6 +4,8 @@ import { AUTH_SERVICE, AUTH_QUEUE } from '@app/common';
 import { SoloService } from './solo.service';
 import { SoloController } from './solo.controller';
 import { CacheModule, ConfigModule, LoggerModule, PrismaModule } from '@app/common';
+const rabbitUrl = process.env.RABBITMQ_HOST as string;
+
 
 @Module({
   imports: [
@@ -16,7 +18,7 @@ import { CacheModule, ConfigModule, LoggerModule, PrismaModule } from '@app/comm
         name: AUTH_SERVICE,
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://localhost:5672'],
+          urls: [rabbitUrl],
           queue: AUTH_QUEUE,
           queueOptions: { durable: false },
         },
