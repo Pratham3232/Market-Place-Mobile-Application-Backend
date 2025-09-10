@@ -23,6 +23,13 @@ variable "twilio_phone_number" {}
 variable "redis_host" {}
 variable "rabbitmq_host" {}
 
+variable "xpi_base_url" {
+  
+}
+variable "AZURE_STORAGE_CONNECTION_STRING" {
+  
+}
+
   
 provider "azurerm" {
   features {}
@@ -82,6 +89,14 @@ resource "azurerm_container_app" "this" {
     name  = "rabbitmq-url"
     value = var.rabbitmq_host
   }
+  secret {
+    name  = "xpi-base-url"
+    value = var.xpi_base_url
+  }
+  secret {
+    name  = "azure-storage-connection-string"
+    value = var.AZURE_STORAGE_CONNECTION_STRING
+  }
   template {
     container {
       name   = var.name
@@ -124,6 +139,17 @@ resource "azurerm_container_app" "this" {
         for_each = var.name == "stgproviders" ? {
           REDIS_HOST                   = "redis-url"
           RABBITMQ_HOST                = "rabbitmq-url"
+        } : {}
+
+        content {
+          name        = env.key
+          secret_name = env.value
+        }
+      }
+      dynamic "env" {
+        for_each = var.name == "stgstorage" ? {
+          AZURE_STORAGE_CONNECTION_STRING = "azure-storage-connection-string"
+          XPI_BASE_URL                   = "xpi-base-url"
         } : {}
 
         content {
