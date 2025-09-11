@@ -20,7 +20,7 @@ on:
 env:
   TF_VAR_rg_name: ${{ vars.RG_NAME }}
   TF_VAR_acr_name: ${{ vars.ACR_NAME }}
-  TF_VAR_container_app_env: ${{ vars.CONTAINER_APP_ENV }}
+  TF_VAR_container_app_env_name: ${{ vars.CONTAINER_APP_ENV_NAME }}
   TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
   TF_VAR_twilio_account_sid: ${{ secrets.TWILIO_ACCOUNT_SID }}
   TF_VAR_twilio_auth_token: ${{ secrets.TWILIO_AUTH_TOKEN }}
@@ -77,7 +77,7 @@ jobs:
 
   deploy-container:
     runs-on: ubuntu-latest
-    
+    environment: STG
     needs: deploy-docker-image-to-acr
     env:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
