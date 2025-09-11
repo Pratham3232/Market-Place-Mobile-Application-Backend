@@ -2,7 +2,8 @@ name: Deploy Container
 on:
   push:
     branches:
-      - deploystoragetostg
+      - dev
+      - main
   workflow_dispatch:
     inputs:
       environment:
