@@ -40,5 +40,5 @@ RUN npx prisma generate
 
 COPY --from=development /usr/src/app/dist ./dist
 
-# Command to run the applications
+# Command to run the application
 CMD ["node", "dist/apps/providers/main"]

@@ -92,7 +92,7 @@ jobs:
           context: .
           file: ./apps/providers/Dockerfile
           push: true
-          tags: ${{ env.ACR_LOGIN_SERVER }}/${{ vars.PROVIDERS_IMAGE_IMAGE }}:${{env.IMAGE_TAG}}
+          tags: ${{ env.ACR_LOGIN_SERVER }}/${{ vars.PROVIDERS_IMAGE }}:${{env.IMAGE_TAG}}
           platforms: linux/amd64
       
       - name: Build and push storage image to ACR (linux/amd64)
