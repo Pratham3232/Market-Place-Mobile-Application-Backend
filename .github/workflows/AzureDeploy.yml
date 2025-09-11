@@ -3,10 +3,6 @@ on:
   push:
     branches:
       - deploystoragetostg
-    paths:
-    - apps/auth/*
-    - apps/providers/*
-    - apps/storage/*
   workflow_dispatch:
     inputs:
       environment:
@@ -47,6 +43,7 @@ env:
 
 jobs:
   deploy-docker-image-to-acr:
+    if: false
     environment: STG
     runs-on: ubuntu-latest
     steps: 
@@ -113,8 +110,8 @@ jobs:
 
   deploy-container:
     runs-on: ubuntu-latest
-    
-    needs: deploy-docker-image-to-acr
+    environment: STG
+    # needs: deploy-docker-image-to-acr
     env:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_TENANT_ID:       ${{ secrets.ARM_TENANT_ID }}
