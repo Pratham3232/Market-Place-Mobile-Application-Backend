@@ -19,7 +19,7 @@ export class StorageController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(), // keep in-memory buffer for small images
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+      limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
     }),
   )
   async uploadFile(
