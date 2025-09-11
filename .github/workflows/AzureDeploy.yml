@@ -8,11 +8,11 @@ on:
       environment:
         description: "Deployment environment"
         required: true
-        default: "STG"
+        default: STG
         type: choice
         options:
-          - "PROD"
-          - "STG"
+          - PROD
+          - STG
 
 
 env:
