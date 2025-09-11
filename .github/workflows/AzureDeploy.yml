@@ -10,7 +10,7 @@ on:
         required: true
         default: "STG"
 
-#trigerring
+
 env:
   TF_VAR_rg_name: ${{ vars.RG_NAME }}
   TF_VAR_acr_name: ${{ vars.ACR_NAME }}
