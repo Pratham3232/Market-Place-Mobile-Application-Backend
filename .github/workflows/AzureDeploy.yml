@@ -43,7 +43,7 @@ env:
 
 jobs:
   deploy-docker-image-to-acr:
-    environment: ${{ github.event.inputs.environment }}
+    environment: STG
     runs-on: ubuntu-latest
     steps: 
       - name: Checkout code
