@@ -7,6 +7,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import { AUTH_QUEUE } from '@app/common';
 import * as dotenv from 'dotenv';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 dotenv.config();
 
 async function bootstrap() {
@@ -30,6 +31,16 @@ async function bootstrap() {
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useLogger(app.get(Logger));
+
+  const config = new DocumentBuilder()
+        .setTitle('Auth Service')
+        .setDescription('Auth Service for Media uploads and management')
+        .setVersion('1.0')
+        // .addBearerAuth()
+        .addTag('auth')
+        .build();
+      const document = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup('api/docs', app, document);
 
   await app.startAllMicroservices();
   await app.listen(configService.get("AUTH_HTTP_PORT") || 3000);
