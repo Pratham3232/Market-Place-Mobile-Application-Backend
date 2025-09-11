@@ -43,7 +43,7 @@ env:
 
 jobs:
   deploy-docker-image-to-acr:
-    environment: STG
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref == 'refs/heads/main' && 'PROD' || 'STG') }}
     runs-on: ubuntu-latest
     steps: 
       - name: Checkout code
@@ -93,7 +93,7 @@ jobs:
 
   deploy-container:
     runs-on: ubuntu-latest
-    environment: STG
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref == 'refs/heads/main' && 'PROD' || 'STG') }}
     needs: deploy-docker-image-to-acr
     env:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
