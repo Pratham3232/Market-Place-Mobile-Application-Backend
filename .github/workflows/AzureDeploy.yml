@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - deploystoragetostg
+    paths:
+    - apps/auth/*
+    - apps/providers/*
+    - apps/storage/*
   workflow_dispatch:
     inputs:
       environment:
@@ -52,6 +56,7 @@ jobs:
       - name: Detect changed folders
         id: changed
         uses: dorny/paths-filter@v2
+        base: ${{ github.event.before }}
         with:
           filters: |
             auth:
