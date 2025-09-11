@@ -43,7 +43,6 @@ env:
 
 jobs:
   deploy-docker-image-to-acr:
-    if: false
     environment: STG
     runs-on: ubuntu-latest
     steps: 
