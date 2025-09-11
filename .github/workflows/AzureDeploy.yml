@@ -50,19 +50,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Detect changed folders
-        id: changed
-        uses: dorny/paths-filter@v2
-        base: ${{ github.event.before }}
-        with:
-          filters: |
-            auth:
-              - 'apps/auth/**'
-            providers:
-              - 'apps/providers/**'
-            storage:
-              - 'apps/storage/**'
-
       - name: Login to Azure
         uses: azure/login@v1
         with:
