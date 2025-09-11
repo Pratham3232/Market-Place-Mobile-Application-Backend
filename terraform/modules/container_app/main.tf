@@ -35,6 +35,23 @@ provider "azurerm" {
   features {}
 }
 
+locals {
+  auth_containers = ["auth", "stgauth", "devauth"]
+  providers_containers = ["providers", "stgproviders", "devproviders"]
+  storage_containers = ["storage", "stgstorage", "devstorage"]
+  redis_containers = ["redis", "stgredis", "devredis"]
+  rabbitmq_containers = ["rabbitmq", "stgrabbitmq", "devrabbitmq"]
+
+  no_ingress_containers = concat(local.redis_containers, local.rabbitmq_containers)
+
+  enable_ingress_for_container = (
+    var.enable_ingress && !contains(local.no_ingress_containers, lower(var.name))
+  )
+}
+
+
+
+
 data "azurerm_container_registry" "acr" {
   name                = var.acr_name
   resource_group_name = var.rg_name
@@ -121,7 +138,7 @@ resource "azurerm_container_app" "this" {
         }
       }
       dynamic "env" {
-        for_each = var.name == "stgauth" ? {
+        for_each = contains(local.auth_containers, var.name) ? {
           TWILIO_ACCOUNT_SID           = "twilio-account-sid"
           TWILIO_AUTH_TOKEN            = "twilio-auth-token"
           TWILIO_MESSAGING_SERVICE_SID = "twilio-messaging-service-sid"
@@ -136,7 +153,7 @@ resource "azurerm_container_app" "this" {
         }
       }
       dynamic "env" {
-        for_each = var.name == "stgproviders" ? {
+        for_each = contains(local.providers_containers, var.name) ? {
           REDIS_HOST                   = "redis-url"
           RABBITMQ_HOST                = "rabbitmq-url"
         } : {}
@@ -147,7 +164,7 @@ resource "azurerm_container_app" "this" {
         }
       }
       dynamic "env" {
-        for_each = var.name == "stgstorage" ? {
+        for_each = contains(local.storage_containers, var.name) ? {
           AZURE_STORAGE_CONNECTION_STRING = "azure-storage-connection-string"
           XPI_BASE_URL                   = "xpi-base-url"
         } : {}
@@ -165,24 +182,16 @@ resource "azurerm_container_app" "this" {
 
   
   dynamic "ingress" {
-    for_each = var.enable_ingress && !(lower(var.name) == "stgredis" || lower(var.name) == "stgrabbitmq") ? [1] : []
-    content {
-      external_enabled = true
-      target_port      = var.target_port
-      traffic_weight {
-        latest_revision = true
-        percentage      = 100
-      }
-    }
-  }
+  for_each = var.enable_ingress ? { "ingress" = true } : {}
 
-  dynamic "ingress" {
-  for_each = var.enable_ingress && (lower(var.name) == "stgredis" || lower(var.name) == "stgrabbitmq") ? [1] : []
   content {
-    external_enabled = false
-    transport        = "tcp"
+    
+    external_enabled = contains(local.no_ingress_containers, lower(var.name)) ? false : true
+    transport        = contains(local.no_ingress_containers, lower(var.name)) ? "tcp"  : "auto"
     target_port      = var.target_port
-    exposed_port     = var.target_port
+
+    
+    exposed_port     = contains(local.no_ingress_containers, lower(var.name)) ? var.target_port : null
 
     traffic_weight {
       latest_revision = true
