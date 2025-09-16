@@ -1,7 +1,8 @@
-import { IsArray, IsString } from 'class-validator';
+import { IsArray, IsString, IsOptional } from 'class-validator';
 
 export class UpdateServiceCategoryDto {
     @IsArray()
     @IsString({ each: true })
-    activity: string[];
+    @IsOptional()
+    activities?: string[];
 }

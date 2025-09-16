@@ -6,7 +6,7 @@ export class CreateServiceCategoryDto {
 
     @IsArray()
     @IsString({ each: true })
-    activity: string[];
+    activities: string[];
 
     @IsOptional()
     @IsInt()

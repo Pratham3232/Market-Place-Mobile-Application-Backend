@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nes
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
+import { SendEmployeeInvitationDto } from './dto/send-employee-invitation.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -30,5 +31,13 @@ export class BusinessController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.businessService.remove(id);
+  }
+
+  @Post(':id/invite-employee')
+  sendEmployeeInvitation(
+    @Param('id') id: string,
+    @Body() dto: SendEmployeeInvitationDto,
+  ) {
+    return this.businessService.sendEmployeeInvitation(Number(id), dto);
   }
 }

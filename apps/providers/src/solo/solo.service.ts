@@ -5,6 +5,7 @@ import { AUTH_SERVICE } from '@app/common';
 import { PrismaService } from '../../../../libs/common/src/prisma/prisma.service';
 import { CreateSoloDto } from './dto/create-solo.dto';
 import { UpdateSoloDto } from './dto/update-solo.dto';
+import { UserRole, Prisma } from '@prisma/client';
 
 @Injectable()
 export class SoloService {
@@ -50,20 +51,72 @@ export class SoloService {
 		}
 	}
 
-	async create(dto: CreateSoloDto, userId: number) {
+	async create(dto: CreateSoloDto, userId?: number) {
 		try {
-			// Check if userId is unique
+			// Handle both new and legacy DTO formats
+			let actualUserId = dto.userId || userId;
+			let userData = dto.userData;
+
+			// If userData is provided, create user first (new format)
+			if (userData) {
+				const user = await this.prisma.user.create({
+					data: {
+						phoneNumber: userData.phoneNumber || `temp_${Date.now()}`, // Temporary phone number
+						name: userData.name,
+						email: userData.email,
+						gender: userData.gender as any,
+						pronouns: userData.pronouns as any,
+						profileImage: userData.profileImage,
+						address: userData.address,
+						city: userData.city,
+						state: userData.state,
+						zipCode: userData.zipCode,
+						isActive: true,
+						roles: [UserRole.SOLO_PROVIDER],
+					},
+				});
+				actualUserId = user.id;
+			} else if (!actualUserId) {
+				// Legacy format - create user from individual fields
+				const user = await this.prisma.user.create({
+					data: {
+						phoneNumber: `temp_${Date.now()}`, // Temporary phone number
+						name: dto.name,
+						email: dto.email,
+						gender: dto.gender as any,
+						pronouns: dto.pronouns as any,
+						profileImage: dto.profileImage,
+						address: dto.address,
+						city: dto.city,
+						state: dto.state,
+						zipCode: dto.zipCode,
+						isActive: dto.isActive ?? true,
+						roles: [UserRole.SOLO_PROVIDER],
+					},
+				});
+				actualUserId = user.id;
+			}
+
+			// Check if userId is unique for providers
 			const exists = await this.prisma.provider.findUnique({
-				where: { userId: userId },
+				where: { userId: actualUserId },
 			});
 			if (exists) throw new BadRequestException('Provider for this user already exists');
-			// Only add soloProvider if allowed by Prisma type
-			const { soloProvider, ...rest } = dto as any;
+
+			// Create provider with provider-specific fields
 			return await this.prisma.provider.create({
 				data: {
-					...rest,
-					userId,
-					soloProvider: true,
+					userId: actualUserId,
+					dateOfBirth: dto.dateOfBirth,
+					bio: dto.bio,
+					soloProvider: dto.soloProvider ?? true,
+					isVerified: dto.isVerified ?? false,
+					rating: dto.rating ?? 0,
+					totalReviews: dto.totalReviews ?? 0,
+					isActive: dto.isActive ?? true,
+				},
+				include: {
+					user: true,
 				},
 			});
 		} catch (err) {
@@ -90,11 +143,68 @@ export class SoloService {
 		try {
 			const provider = await this.prisma.provider.findUnique({
 				where: { id: Number(id) },
+				include: {
+					user: true,
+				},
 			});
 			if (!provider || !(provider as any).soloProvider) throw new NotFoundException('Solo provider not found');
+
+			// Handle both new and legacy DTO formats
+			let userUpdateData: Prisma.UserUpdateInput = {};
+			let providerUpdateData: Prisma.ProviderUpdateInput = {};
+
+			// New format - userData object
+			if (dto.userData) {
+				const userData = dto.userData;
+				if (userData.phoneNumber !== undefined) userUpdateData.phoneNumber = userData.phoneNumber;
+				if (userData.name !== undefined) userUpdateData.name = userData.name;
+				if (userData.email !== undefined) userUpdateData.email = userData.email;
+				if (userData.gender !== undefined) userUpdateData.gender = userData.gender as any;
+				if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns as any;
+				if (userData.profileImage !== undefined) userUpdateData.profileImage = userData.profileImage;
+				if (userData.address !== undefined) userUpdateData.address = userData.address;
+				if (userData.city !== undefined) userUpdateData.city = userData.city;
+				if (userData.state !== undefined) userUpdateData.state = userData.state;
+				if (userData.zipCode !== undefined) userUpdateData.zipCode = userData.zipCode;
+			}
+
+			// Legacy format support - individual fields (for backward compatibility)
+			if (dto.name !== undefined) userUpdateData.name = dto.name;
+			if (dto.email !== undefined) userUpdateData.email = dto.email;
+			if (dto.phoneNumber !== undefined) userUpdateData.phoneNumber = dto.phoneNumber;
+			if (dto.gender !== undefined) userUpdateData.gender = dto.gender as any;
+			if (dto.pronouns !== undefined) userUpdateData.pronouns = dto.pronouns as any;
+			if (dto.profileImage !== undefined) userUpdateData.profileImage = dto.profileImage;
+			if (dto.address !== undefined) userUpdateData.address = dto.address;
+			if (dto.city !== undefined) userUpdateData.city = dto.city;
+			if (dto.state !== undefined) userUpdateData.state = dto.state;
+			if (dto.zipCode !== undefined) userUpdateData.zipCode = dto.zipCode;
+
+			// Provider specific fields
+			if (dto.dateOfBirth !== undefined) providerUpdateData.dateOfBirth = dto.dateOfBirth;
+			if (dto.bio !== undefined) providerUpdateData.bio = dto.bio;
+			if (dto.soloProvider !== undefined) providerUpdateData.soloProvider = dto.soloProvider;
+			if (dto.isVerified !== undefined) providerUpdateData.isVerified = dto.isVerified;
+			if (dto.rating !== undefined) providerUpdateData.rating = dto.rating;
+			if (dto.totalReviews !== undefined) providerUpdateData.totalReviews = dto.totalReviews;
+			if (dto.isActive !== undefined) {
+				providerUpdateData.isActive = dto.isActive;
+				userUpdateData.isActive = dto.isActive;
+			}
+
+			// Update user data if there are changes
+			if (Object.keys(userUpdateData).length > 0) {
+				providerUpdateData.user = {
+					update: userUpdateData
+				};
+			}
+
 			return await this.prisma.provider.update({
 				where: { id: Number(id) },
-				data: dto,
+				data: providerUpdateData,
+				include: {
+					user: true,
+				},
 			});
 		} catch (err) {
 			console.error(err);

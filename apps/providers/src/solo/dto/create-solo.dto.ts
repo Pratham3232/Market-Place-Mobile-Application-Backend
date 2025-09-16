@@ -1,53 +1,28 @@
-import { Gender, Pronouns } from '@prisma/client';
-import { IsInt, IsOptional, IsString, IsBoolean, IsDateString, IsNumber, IsEmail, IsEnum } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsBoolean, IsDateString, IsNumber, IsEmail, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { UserDataDto } from '../../dto/user-data.dto';
 
 export class CreateSoloDto {
+	@IsOptional()
 	@IsInt()
-	userId: number;
+	userId?: number;
 
 	@IsOptional()
-	@IsString()
-	name: string;
-
-	@IsOptional()
-	@IsEmail()
-	email: string;
+	@ValidateNested()
+	@Type(() => UserDataDto)
+	userData?: UserDataDto;
 
 	@IsOptional()
 	@IsDateString()
 	dateOfBirth?: Date;
 
 	@IsOptional()
-	@IsEnum(Gender)
-	gender?: Gender;
-
-	@IsOptional()
-	@IsEnum(Pronouns)
-	pronouns?: Pronouns;
-
-	@IsOptional()
 	@IsString()
 	bio?: string;
 
 	@IsOptional()
-	@IsString()
-	address?: string;
-
-	@IsOptional()
-	@IsString()
-	city?: string;
-
-	@IsOptional()
-	@IsString()
-	state?: string;
-
-	@IsOptional()
-	@IsString()
-	zipCode?: string;
-
-	@IsOptional()
-	@IsString()
-	profileImage?: string;
+	@IsBoolean()
+	soloProvider?: boolean;
 
 	@IsOptional()
 	@IsBoolean()
@@ -68,4 +43,45 @@ export class CreateSoloDto {
 	@IsOptional()
 	@IsInt()
 	businessProviderId?: number;
+
+	// Legacy fields for backward compatibility
+	@IsOptional()
+	@IsString()
+	name?: string;
+
+	@IsOptional()
+	@IsEmail()
+	email?: string;
+
+	@IsOptional()
+	@IsString()
+	phoneNumber?: string;
+
+	@IsOptional()
+	@IsString()
+	gender?: string;
+
+	@IsOptional()
+	@IsString()
+	pronouns?: string;
+
+	@IsOptional()
+	@IsString()
+	profileImage?: string;
+
+	@IsOptional()
+	@IsString()
+	address?: string;
+
+	@IsOptional()
+	@IsString()
+	city?: string;
+
+	@IsOptional()
+	@IsString()
+	state?: string;
+
+	@IsOptional()
+	@IsString()
+	zipCode?: string;
 }
