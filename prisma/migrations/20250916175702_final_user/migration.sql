@@ -2,7 +2,7 @@
 CREATE TYPE "DayOfWeek" AS ENUM ('SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY');
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'MEMBER', 'SOLO_PROVIDER', 'BUSINESS_PROVIDER', 'LOCATION_PROVIDER');
+CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'MEMBER', 'SOLO_PROVIDER', 'BUSINESS_PROVIDER', 'BUSINESS_EMPLOYEE', 'LOCATION_PROVIDER');
 
 -- CreateEnum
 CREATE TYPE "BusinesMemberRole" AS ENUM ('ADMIN', 'MANAGER', 'READ');
@@ -19,6 +19,12 @@ CREATE TYPE "LocationBooking" AS ENUM ('PART_OF_SPACE', 'FULL_FACILITY');
 -- CreateEnum
 CREATE TYPE "BookingNotice" AS ENUM ('NONE', 'ONE_HOUR', 'EIGHT_HOURS', 'TWENTY_FOUR_HOURS');
 
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "Pronouns" AS ENUM ('HE_HIM', 'SHE_HER', 'THEY_THEM', 'OTHER');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
@@ -27,6 +33,16 @@ CREATE TABLE "User" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "xpiId" INTEGER,
+    "name" TEXT,
+    "email" TEXT,
+    "gender" "Gender",
+    "pronouns" "Pronouns",
+    "profileImage" TEXT,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -35,15 +51,8 @@ CREATE TABLE "User" (
 CREATE TABLE "Provider" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
     "dateOfBirth" TIMESTAMP(3),
     "bio" TEXT,
-    "address" TEXT,
-    "city" TEXT,
-    "state" TEXT,
-    "zipCode" TEXT,
-    "profileImage" TEXT,
     "soloProvider" BOOLEAN DEFAULT false,
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "rating" DOUBLE PRECISION DEFAULT 0,
@@ -62,12 +71,14 @@ CREATE TABLE "BusinessProvider" (
     "userId" INTEGER NOT NULL,
     "businessName" TEXT NOT NULL,
     "businessType" TEXT NOT NULL,
-    "city" TEXT,
-    "state" TEXT,
-    "zipCode" TEXT,
     "businessEmail" TEXT,
+    "availabilityModification" BOOLEAN NOT NULL DEFAULT false,
+    "serviceModification" BOOLEAN NOT NULL DEFAULT false,
+    "deliveryOptionChoices" BOOLEAN NOT NULL DEFAULT false,
+    "bookingApprovalRequired" BOOLEAN NOT NULL DEFAULT false,
+    "changeCategoryOption" BOOLEAN NOT NULL DEFAULT false,
+    "priceModificationOption" BOOLEAN NOT NULL DEFAULT false,
     "adminName" TEXT,
-    "address" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -82,6 +93,8 @@ CREATE TABLE "BusinessMember" (
     "email" TEXT NOT NULL,
     "phoneNumber" TEXT NOT NULL,
     "role" "BusinesMemberRole" NOT NULL,
+    "gender" "Gender",
+    "pronouns" "Pronouns",
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -94,8 +107,6 @@ CREATE TABLE "BusinessMember" (
 CREATE TABLE "LocationProvider" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
-    "email" TEXT,
     "phone" TEXT,
     "contactPerson" TEXT,
     "website" TEXT,
@@ -127,6 +138,7 @@ CREATE TABLE "LocationService" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "locationProviderId" INTEGER,
+    "serviceCategoryId" INTEGER,
 
     CONSTRAINT "LocationService_pkey" PRIMARY KEY ("id")
 );
@@ -138,6 +150,8 @@ CREATE TABLE "LocationMember" (
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phoneNumber" TEXT NOT NULL,
+    "gender" "Gender",
+    "pronouns" "Pronouns",
     "role" "BusinesMemberRole" NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -148,12 +162,62 @@ CREATE TABLE "LocationMember" (
 );
 
 -- CreateTable
+CREATE TABLE "Conversation" (
+    "id" SERIAL NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "providerId" INTEGER,
+    "businessProviderId" INTEGER,
+    "locationProviderId" INTEGER,
+
+    CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Message" (
+    "id" SERIAL NOT NULL,
+    "conversationId" INTEGER NOT NULL,
+    "question" TEXT,
+    "content" TEXT NOT NULL,
+    "audioUrl" TEXT,
+    "videoUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ServiceCategory" (
+    "id" SERIAL NOT NULL,
+    "categoryName" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdBy" INTEGER,
+
+    CONSTRAINT "ServiceCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Activity" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "serviceCategoryId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Activity_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Service" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL DEFAULT '',
     "pricePerHour" DECIMAL(10,2) NOT NULL,
     "category" TEXT DEFAULT '',
+    "ageMin" INTEGER,
+    "ageMax" INTEGER,
     "serviceProviderOptions" "ServiceProviderOptions"[],
     "bookingPreference" "BookingPreference",
     "subCategory" TEXT,
@@ -162,6 +226,7 @@ CREATE TABLE "Service" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "providerId" INTEGER,
+    "serviceCategoryId" INTEGER,
     "businessProviderId" INTEGER,
 
     CONSTRAINT "Service_pkey" PRIMARY KEY ("id")
@@ -187,13 +252,19 @@ CREATE TABLE "Availability" (
 CREATE UNIQUE INDEX "User_phoneNumber_key" ON "User"("phoneNumber");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_xpiId_key" ON "User"("xpiId");
+
+-- CreateIndex
+CREATE INDEX "User_city_state_idx" ON "User"("city", "state");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Provider_userId_key" ON "Provider"("userId");
 
 -- CreateIndex
-CREATE INDEX "Provider_city_state_idx" ON "Provider"("city", "state");
+CREATE INDEX "Provider_isActive_isVerified_idx" ON "Provider"("isActive", "isVerified");
 
 -- CreateIndex
-CREATE INDEX "Provider_isActive_isVerified_idx" ON "Provider"("isActive", "isVerified");
+CREATE INDEX "Provider_soloProvider_businessProviderId_idx" ON "Provider"("soloProvider", "businessProviderId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "BusinessProvider_userId_key" ON "BusinessProvider"("userId");
@@ -220,7 +291,25 @@ CREATE UNIQUE INDEX "LocationMember_email_key" ON "LocationMember"("email");
 CREATE UNIQUE INDEX "LocationMember_phoneNumber_key" ON "LocationMember"("phoneNumber");
 
 -- CreateIndex
-CREATE INDEX "Service_category_subCategory_idx" ON "Service"("category", "subCategory");
+CREATE UNIQUE INDEX "Conversation_sessionId_key" ON "Conversation"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_sessionId_idx" ON "Conversation"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_providerId_businessProviderId_locationProvider_idx" ON "Conversation"("providerId", "businessProviderId", "locationProviderId");
+
+-- CreateIndex
+CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ServiceCategory_categoryName_key" ON "ServiceCategory"("categoryName");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Activity_serviceCategoryId_name_key" ON "Activity"("serviceCategoryId", "name");
+
+-- CreateIndex
+CREATE INDEX "Service_category_subCategory_ageMin_ageMax_idx" ON "Service"("category", "subCategory", "ageMin", "ageMax");
 
 -- CreateIndex
 CREATE INDEX "Service_providerId_businessProviderId_isActive_idx" ON "Service"("providerId", "businessProviderId", "isActive");
@@ -235,7 +324,7 @@ CREATE UNIQUE INDEX "Availability_providerId_locationProviderId_businessProvider
 ALTER TABLE "Provider" ADD CONSTRAINT "Provider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Provider" ADD CONSTRAINT "Provider_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Provider" ADD CONSTRAINT "Provider_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "BusinessProvider" ADD CONSTRAINT "BusinessProvider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -250,10 +339,31 @@ ALTER TABLE "LocationProvider" ADD CONSTRAINT "LocationProvider_userId_fkey" FOR
 ALTER TABLE "LocationService" ADD CONSTRAINT "LocationService_locationProviderId_fkey" FOREIGN KEY ("locationProviderId") REFERENCES "LocationProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LocationService" ADD CONSTRAINT "LocationService_serviceCategoryId_fkey" FOREIGN KEY ("serviceCategoryId") REFERENCES "ServiceCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "LocationMember" ADD CONSTRAINT "LocationMember_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "LocationProvider"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_locationProviderId_fkey" FOREIGN KEY ("locationProviderId") REFERENCES "LocationProvider"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Activity" ADD CONSTRAINT "Activity_serviceCategoryId_fkey" FOREIGN KEY ("serviceCategoryId") REFERENCES "ServiceCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Service" ADD CONSTRAINT "Service_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Service" ADD CONSTRAINT "Service_serviceCategoryId_fkey" FOREIGN KEY ("serviceCategoryId") REFERENCES "ServiceCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Service" ADD CONSTRAINT "Service_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;

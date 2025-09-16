@@ -15,27 +15,30 @@ model User {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   xpiId            Int?              @unique 
-  // Relationships
+  // Common profile fields moved from other models
+  name             String?
+  email            String?
+  gender           Gender?
+  pronouns         Pronouns?
+  profileImage     String?
+  address          String?
+  city             String?
+  state            String?
+  zipCode          String?
+    // Relationships
   provider         Provider?
   BusinessProvider BusinessProvider?
   LocationProvider LocationProvider?
+
+  @@index([city, state])
 }
 
 model Provider {
   id                 Int               @id @default(autoincrement())
   userId             Int               @unique
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name               String
-  email              String
-  gender             Gender?
-  pronouns           Pronouns?
   dateOfBirth        DateTime?
   bio                String?
-  address            String?
-  city               String?
-  state              String?
-  zipCode            String?
-  profileImage       String?
   soloProvider       Boolean?          @default(false)
   isVerified         Boolean           @default(false)
   rating             Float?            @default(0)
@@ -43,15 +46,17 @@ model Provider {
   isActive           Boolean           @default(true)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
+  businessProviderId Int?              // Optional - only set for business providers (soloProvider = false)
+  businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id], onDelete: Cascade)
   // Relationships
   services           Service[]
   availability       Availability[]
-  BusinessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id])
-  businessProviderId Int?
+  conversations      Conversation[]
 
-  @@index([city, state])
   @@index([isActive, isVerified])
+  @@index([soloProvider, businessProviderId])
 }
+
 
 model BusinessProvider {
   id             Int              @id @default(autoincrement())
@@ -59,12 +64,7 @@ model BusinessProvider {
   User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessName   String
   businessType   String
-  city           String?
-  state          String?
-  zipCode        String?
   businessEmail  String?
-  gender         Gender?
-  pronouns       Pronouns?
   availabilityModification Boolean @default(false)
   serviceModification     Boolean @default(false)
   deliveryOptionChoices   Boolean @default(false)
@@ -72,13 +72,14 @@ model BusinessProvider {
   changeCategoryOption Boolean @default(false)
   priceModificationOption Boolean @default(false)
   adminName      String?
-  address        String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  Provider       Provider[]
+  // Relationships
+  providers      Provider[]       // Business providers will have corresponding Provider entries
   BusinessMember BusinessMember[]
   Services       Service[]
   Availability   Availability[]
+  conversations  Conversation[]
 }
 
 model BusinessMember {
@@ -101,11 +102,7 @@ model LocationProvider {
   id             Int              @id @default(autoincrement())
   userId         Int              @unique
   User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name           String
-  email          String?
   phone          String?
-  gender         Gender?
-  pronouns       Pronouns?
   contactPerson  String?
   website        String?
   fullAddress    String?
@@ -114,6 +111,7 @@ model LocationProvider {
   LocationMember LocationMember[]
   LocationService LocationService[]
   Availability   Availability[]
+  conversations  Conversation[]
 }
 
 model LocationService {
@@ -161,15 +159,60 @@ model LocationMember {
   businessProviderId Int?
 }
 
+model Conversation {
+  id                 Int               @id @default(autoincrement())
+  sessionId          String            @unique
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  
+  // Provider relationships
+  providerId         Int?
+  provider           Provider?         @relation(fields: [providerId], references: [id])
+  businessProviderId Int?
+  businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id])
+  locationProviderId Int?
+  locationProvider   LocationProvider? @relation(fields: [locationProviderId], references: [id])
+  
+  // Messages relationship
+  messages           Message[]
+
+  @@index([sessionId])
+  @@index([providerId, businessProviderId, locationProviderId])
+}
+
+model Message {
+  id              Int          @id @default(autoincrement())
+  conversationId  Int
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  question        String?
+  content         String
+  audioUrl        String?
+  videoUrl        String?
+  createdAt       DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
 model ServiceCategory {
   id            Int @id @default(autoincrement())
   categoryName  String @unique
-  activity      String[]
+  activities    Activity[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   createdBy     Int?
   services      Service[]
   locationServices LocationService[]
+}
+
+model Activity {
+  id               Int @id @default(autoincrement())
+  name             String
+  serviceCategoryId Int
+  serviceCategory  ServiceCategory @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([serviceCategoryId, name])
 }
 
 model Service {
@@ -236,6 +279,7 @@ enum UserRole {
   MEMBER
   SOLO_PROVIDER
   BUSINESS_PROVIDER
+  BUSINESS_EMPLOYEE
   LOCATION_PROVIDER
 }
 

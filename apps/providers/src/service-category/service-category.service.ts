@@ -10,7 +10,18 @@ export class ServiceCategoryService {
   async create(createServiceCategoryDto: CreateServiceCategoryDto) {
     try {
       const serviceCategory = await this.prisma.serviceCategory.create({
-        data: createServiceCategoryDto,
+        data: {
+          categoryName: createServiceCategoryDto.categoryName,
+          createdBy: createServiceCategoryDto.createdBy,
+          activities: {
+            create: createServiceCategoryDto.activities.map(name => ({
+              name
+            }))
+          }
+        },
+        include: {
+          activities: true
+        }
       });
 
       return serviceCategory;
@@ -27,7 +38,11 @@ export class ServiceCategoryService {
 
   async findAll() {
     try {
-      return await this.prisma.serviceCategory.findMany();
+      return await this.prisma.serviceCategory.findMany({
+        include: {
+          activities: true
+        }
+      });
     } catch (err) {
       console.error(err);
       return {
@@ -40,7 +55,10 @@ export class ServiceCategoryService {
   async findOne(id: number) {
     try {
       const category = await this.prisma.serviceCategory.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          activities: true
+        }
       });
 
       if (!category) {
@@ -61,32 +79,44 @@ export class ServiceCategoryService {
     try {
       // First check if the category exists
       const existingCategory = await this.prisma.serviceCategory.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          activities: true
+        }
       });
 
       if (!existingCategory) {
         throw new NotFoundException('Service category not found');
       }
 
-      // Check if the activities already exist in the array
-      const duplicateActivities = updateServiceCategoryDto.activity.filter(
-        activity => existingCategory.activity.includes(activity)
-      );
+      if (updateServiceCategoryDto.activities) {
+        // Check if the activities already exist
+        const existingActivityNames = existingCategory.activities.map(a => a.name);
+        const duplicateActivities = updateServiceCategoryDto.activities.filter(
+          activity => existingActivityNames.includes(activity)
+        );
 
-      if (duplicateActivities.length > 0) {
-        return {
-          success: false,
-          message: `Activities already exist: ${duplicateActivities.join(', ')}`
-        };
+        if (duplicateActivities.length > 0) {
+          return {
+            success: false,
+            message: `Activities already exist: ${duplicateActivities.join(', ')}`
+          };
+        }
+
+        // Add new activities
+        await this.prisma.activity.createMany({
+          data: updateServiceCategoryDto.activities.map(name => ({
+            name,
+            serviceCategoryId: id
+          }))
+        });
       }
 
-      // Update the category by adding new activities
-      const updatedCategory = await this.prisma.serviceCategory.update({
+      // Get the updated category with activities
+      const updatedCategory = await this.prisma.serviceCategory.findUnique({
         where: { id },
-        data: {
-          activity: {
-            push: updateServiceCategoryDto.activity
-          }
+        include: {
+          activities: true
         }
       });
 
@@ -102,6 +132,7 @@ export class ServiceCategoryService {
 
   async remove(id: number) {
     try {
+      // The activities will be automatically deleted due to onDelete: Cascade
       await this.prisma.serviceCategory.delete({
         where: { id }
       });

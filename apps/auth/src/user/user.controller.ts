@@ -3,6 +3,7 @@ import { UserService } from './user.service';
 import { User, UserRole } from '@prisma/client';
 import { AuthGuard } from '../guards/auth.guard';
 import { MessagePattern } from '@nestjs/microservices';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Controller('user')
 export class UserController {
@@ -35,7 +36,7 @@ export class UserController {
     @Patch(':id')
     async patchUser(
         @Param('id') id: string,
-        @Body() userData: { xpiId?: number }
+        @Body() userData: UpdateUserDto
     ): Promise<User> {
         return this.userService.patchUser(id, userData);
     }

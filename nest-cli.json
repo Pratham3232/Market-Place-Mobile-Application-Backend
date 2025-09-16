@@ -28,6 +28,15 @@
         "tsConfigPath": "libs/common/tsconfig.lib.json"
       }
     },
+    "llm-operations": {
+      "type": "application",
+      "root": "apps/llm-operations",
+      "entryFile": "main",
+      "sourceRoot": "apps/llm-operations/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/llm-operations/tsconfig.app.json"
+      }
+    },
     "providers": {
       "type": "application",
       "root": "apps/providers",

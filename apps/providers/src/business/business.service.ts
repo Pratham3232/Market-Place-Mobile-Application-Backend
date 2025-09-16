@@ -4,6 +4,8 @@ import { AUTH_SERVICE } from '@app/common';
 import { PrismaService } from '../../../../libs/common/src/prisma/prisma.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
+import { SendEmployeeInvitationDto } from './dto/send-employee-invitation.dto';
+import { UserRole, Prisma } from '@prisma/client';
 
 @Injectable()
 export class BusinessService {
@@ -40,16 +42,98 @@ export class BusinessService {
     }
   }
 
-  async create(dto: CreateBusinessDto, userId: number) {
+  async create(dto: CreateBusinessDto, userId?: number) {
     try {
-      // Check if userId is unique
+      // Handle both new and legacy DTO formats
+      let actualUserId = dto.userId || userId;
+      let userData = dto.userData;
+
+      // If userData is provided, create user first (new format)
+      if (userData) {
+        const user = await this.prisma.user.create({
+          data: {
+            phoneNumber: userData.phoneNumber || `temp_${Date.now()}`, // Temporary phone number
+            name: userData.name,
+            email: userData.email,
+            gender: userData.gender as any,
+            pronouns: userData.pronouns as any,
+            profileImage: userData.profileImage,
+            address: userData.address,
+            city: userData.city,
+            state: userData.state,
+            zipCode: userData.zipCode,
+            isActive: true,
+            roles: [UserRole.BUSINESS_PROVIDER],
+          },
+        });
+        actualUserId = user.id;
+      } else if (!actualUserId) {
+        // Legacy format - create user from individual fields
+        const user = await this.prisma.user.create({
+          data: {
+            phoneNumber: `temp_${Date.now()}`, // Temporary phone number
+            name: dto.name,
+            email: dto.email,
+            gender: dto.gender as any,
+            pronouns: dto.pronouns as any,
+            profileImage: dto.profileImage,
+            address: dto.address,
+            city: dto.city,
+            state: dto.state,
+            zipCode: dto.zipCode,
+            isActive: dto.isActive ?? true,
+            roles: [UserRole.BUSINESS_PROVIDER],
+          },
+        });
+        actualUserId = user.id;
+      }
+
+      // Check if userId is unique for business providers
       const exists = await this.prisma.businessProvider.findUnique({
-        where: { userId: userId },
+        where: { userId: actualUserId },
       });
       if (exists) throw new BadRequestException('Business provider for this user already exists');
-      return await this.prisma.businessProvider.create({
-        data: { ...dto, userId },
+
+      // Create business provider with business-specific fields
+      const businessProvider = await this.prisma.businessProvider.create({
+        data: {
+          userId: actualUserId,
+          businessName: dto.businessName,
+          businessType: dto.businessType,
+          businessEmail: dto.businessEmail,
+          availabilityModification: dto.availabilityModification ?? false,
+          serviceModification: dto.serviceModification ?? false,
+          deliveryOptionChoices: dto.deliveryOptionChoices ?? false,
+          bookingApprovalRequired: dto.bookingApprovalRequired ?? false,
+          changeCategoryOption: dto.changeCategoryOption ?? false,
+          priceModificationOption: dto.priceModificationOption ?? false,
+          adminName: dto.adminName,
+        },
+        include: {
+          User: true,
+        },
       });
+
+      // Create corresponding Provider entry with soloProvider = false and reference to BusinessProvider
+      const provider = await this.prisma.provider.create({
+        data: {
+          userId: actualUserId,
+          soloProvider: false,
+          businessProviderId: businessProvider.id,
+          isActive: true,
+        },
+        include: {
+          user: true,
+          businessProvider: true,
+        },
+      });
+
+      return {
+        success: true,
+        businessProvider,
+        provider,
+        message: 'Business provider and corresponding provider entry created successfully'
+      };
     } catch (err) {
       console.error(err);
       return {
@@ -74,11 +158,69 @@ export class BusinessService {
     try {
       const business = await this.prisma.businessProvider.findUnique({
         where: { id: Number(id) },
+        include: {
+          User: true,
+        },
       });
       if (!business) throw new NotFoundException('Business provider not found');
+
+      // Handle both new and legacy DTO formats
+      let userUpdateData: Prisma.UserUpdateInput = {};
+      let businessUpdateData: Prisma.BusinessProviderUpdateInput = {};
+
+      // New format - userData object
+      if (dto.userData) {
+        const userData = dto.userData;
+        if (userData.phoneNumber !== undefined) userUpdateData.phoneNumber = userData.phoneNumber;
+        if (userData.name !== undefined) userUpdateData.name = userData.name;
+        if (userData.email !== undefined) userUpdateData.email = userData.email;
+        if (userData.gender !== undefined) userUpdateData.gender = userData.gender as any;
+        if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns as any;
+        if (userData.profileImage !== undefined) userUpdateData.profileImage = userData.profileImage;
+        if (userData.address !== undefined) userUpdateData.address = userData.address;
+        if (userData.city !== undefined) userUpdateData.city = userData.city;
+        if (userData.state !== undefined) userUpdateData.state = userData.state;
+        if (userData.zipCode !== undefined) userUpdateData.zipCode = userData.zipCode;
+      }
+
+      // Legacy format support - individual fields (for backward compatibility)
+      if (dto.name !== undefined) userUpdateData.name = dto.name;
+      if (dto.email !== undefined) userUpdateData.email = dto.email;
+      if (dto.phoneNumber !== undefined) userUpdateData.phoneNumber = dto.phoneNumber;
+      if (dto.gender !== undefined) userUpdateData.gender = dto.gender as any;
+      if (dto.pronouns !== undefined) userUpdateData.pronouns = dto.pronouns as any;
+      if (dto.profileImage !== undefined) userUpdateData.profileImage = dto.profileImage;
+      if (dto.address !== undefined) userUpdateData.address = dto.address;
+      if (dto.city !== undefined) userUpdateData.city = dto.city;
+      if (dto.state !== undefined) userUpdateData.state = dto.state;
+      if (dto.zipCode !== undefined) userUpdateData.zipCode = dto.zipCode;
+      if (dto.isActive !== undefined) userUpdateData.isActive = dto.isActive;
+
+      // Business provider specific fields
+      if (dto.businessName !== undefined) businessUpdateData.businessName = dto.businessName;
+      if (dto.businessType !== undefined) businessUpdateData.businessType = dto.businessType;
+      if (dto.businessEmail !== undefined) businessUpdateData.businessEmail = dto.businessEmail;
+      if (dto.availabilityModification !== undefined) businessUpdateData.availabilityModification = dto.availabilityModification;
+      if (dto.serviceModification !== undefined) businessUpdateData.serviceModification = dto.serviceModification;
+      if (dto.deliveryOptionChoices !== undefined) businessUpdateData.deliveryOptionChoices = dto.deliveryOptionChoices;
+      if (dto.bookingApprovalRequired !== undefined) businessUpdateData.bookingApprovalRequired = dto.bookingApprovalRequired;
+      if (dto.changeCategoryOption !== undefined) businessUpdateData.changeCategoryOption = dto.changeCategoryOption;
+      if (dto.priceModificationOption !== undefined) businessUpdateData.priceModificationOption = dto.priceModificationOption;
+      if (dto.adminName !== undefined) businessUpdateData.adminName = dto.adminName;
+
+      // Update user data if there are changes
+      if (Object.keys(userUpdateData).length > 0) {
+        businessUpdateData.User = {
+          update: userUpdateData
+        };
+      }
+
       return await this.prisma.businessProvider.update({
         where: { id: Number(id) },
-        data: dto as any,
+        data: businessUpdateData,
+        include: {
+          User: true,
+        },
       });
     } catch (err) {
       console.error(err);
@@ -103,6 +245,95 @@ export class BusinessService {
       return {
         success: false,
         message: err.message || 'Failed to delete business provider'
+      };
+    }
+  }
+
+  async sendEmployeeInvitation(businessProviderId: number, dto: SendEmployeeInvitationDto) {
+    try {
+      // Check if business provider exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessProviderId },
+      });
+
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      // Check if user with phone number already exists
+      let user = await this.prisma.user.findUnique({
+        where: { phoneNumber: dto.phoneNumber },
+      });
+
+      // If user doesn't exist, create a new one
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            phoneNumber: dto.phoneNumber,
+            roles: [UserRole.BUSINESS_EMPLOYEE],
+            isActive: true,
+          },
+        });
+      } else {
+        // If user exists, check if they're already a provider for this business
+        const existingProvider = await this.prisma.provider.findFirst({
+          where: { 
+            userId: user.id,
+            businessProviderId: businessProviderId,
+          },
+        });
+
+        if (existingProvider) {
+          throw new BadRequestException('User is already a provider for this business');
+        }
+
+        // Add BUSINESS_EMPLOYEE role if not present
+        if (!user.roles.includes(UserRole.BUSINESS_EMPLOYEE)) {
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+              roles: [...user.roles, UserRole.BUSINESS_EMPLOYEE],
+            },
+          });
+        }
+      }
+
+      // Create provider entry for business employee
+      const provider = await this.prisma.provider.create({
+        data: {
+          userId: user.id,
+          businessProviderId,
+          soloProvider: false,
+          isActive: true,
+        },
+        include: {
+          user: true,
+          businessProvider: true,
+        },
+      });
+
+      // Update user with the name (since common fields are now in User table)
+      if (dto.name) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { name: dto.name },
+        });
+      }
+
+      // TODO: Send invitation SMS/email with onboarding link
+      // The link should include a token that can be used to verify the user
+      // For now, we'll just return the provider data
+
+      return {
+        success: true,
+        message: 'Business employee invitation sent successfully',
+        data: provider,
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to send business employee invitation',
       };
     }
   }
