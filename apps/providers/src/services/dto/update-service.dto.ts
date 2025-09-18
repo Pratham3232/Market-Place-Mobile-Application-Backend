@@ -2,21 +2,21 @@ import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, IsEnum, IsDecimal, 
 import { ServiceProviderOptions, BookingPreference, LocationBooking } from '@prisma/client';
 
 export class UpdateServiceDto {
-  @IsString()
-  @IsOptional()
-  name?: string;
+    @IsString()
+    @IsOptional()
+    name?: string;
 
-  @IsString()
-  @IsOptional()
-  description?: string;
+    @IsString()
+    @IsOptional()
+    description?: string;
 
-  @IsDecimal()
-  @IsOptional()
-  pricePerHour?: any; // Use string or Decimal type as per your setup
+    @IsDecimal()
+    @IsOptional()
+    pricePerHour?: any; // Use string or Decimal type as per your setup
 
-  @IsString()
-  @IsOptional()
-  category?: string;
+    @IsString()
+    @IsOptional()
+    category?: string;
 
   @IsInt()
   @IsOptional()
@@ -26,30 +26,30 @@ export class UpdateServiceDto {
   @IsOptional()
   ageMax?: number;
 
-  @IsArray()
-  @IsEnum(ServiceProviderOptions, { each: true })
-  @IsOptional()
-  serviceProviderOptions?: ServiceProviderOptions[];
+    @IsArray()
+    @IsEnum(ServiceProviderOptions, { each: true })
+    @IsOptional()
+    serviceProviderOptions?: ServiceProviderOptions[];
 
-  @IsEnum(BookingPreference)
-  @IsOptional()
-  bookingPreference?: BookingPreference;
+    @IsEnum(BookingPreference)
+    @IsOptional()
+    bookingPreference?: BookingPreference;
 
-  @IsString()
-  @IsOptional()
-  subCategory?: string;
+    @IsString()
+    @IsOptional()
+    subCategory?: string;
 
-  @IsString()
-  @IsOptional()
-  additionalNotes?: string;
+    @IsString()
+    @IsOptional()
+    additionalNotes?: string;
 
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
+    @IsBoolean()
+    @IsOptional()
+    isActive?: boolean;
 
-  @IsInt()
-  @IsOptional()
-  providerId?: number;
+    @IsInt()
+    @IsOptional()
+    providerId?: number;
 
   @IsInt()
   @IsOptional()
