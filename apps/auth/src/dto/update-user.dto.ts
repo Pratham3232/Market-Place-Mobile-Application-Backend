@@ -7,7 +7,8 @@ import {
   IsArray, 
   IsInt,
   IsBoolean,
-  IsPhoneNumber
+  IsPhoneNumber,
+  IsDateString
 } from 'class-validator';
 
 export class UpdateUserDto {
@@ -41,20 +42,8 @@ export class UpdateUserDto {
   profileImage?: string;
 
   @IsOptional()
-  @IsString()
-  address?: string;
-
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @IsOptional()
-  @IsString()
-  zipCode?: string;
+  @IsDateString()
+  dateOfBirth?: Date;
 
   @IsOptional()
   @IsInt()

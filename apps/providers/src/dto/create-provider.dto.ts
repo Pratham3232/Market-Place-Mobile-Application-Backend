@@ -1,20 +1,12 @@
-import { IsOptional, IsString, IsBoolean, IsArray, ValidateNested, IsUrl, IsPhoneNumber, IsEmail } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsNumber, IsInt } from 'class-validator';
 
 export class CreateProviderDto {
-    @IsOptional()
-    @IsString()
-    bio?: string;
+    @IsInt()
+    userId: number;
 
     @IsOptional()
     @IsString()
     address?: string;
-
-    @IsString()
-    name: string;
-
-    @IsString()
-    @IsEmail()
-    email: string;
 
     @IsOptional()
     @IsString()
@@ -29,14 +21,34 @@ export class CreateProviderDto {
     zipCode?: string;
 
     @IsOptional()
-    @IsUrl()
-    profileImage?: string;
+    @IsNumber()
+    latitude?: number;
+
+    @IsOptional()
+    @IsNumber()
+    longitude?: number;
 
     @IsOptional()
     @IsBoolean()
-    isVerified?: boolean = false;
+    soloProvider?: boolean;
 
     @IsOptional()
     @IsBoolean()
-    isActive?: boolean = true;
+    isVerified?: boolean;
+
+    @IsOptional()
+    @IsNumber()
+    rating?: number;
+
+    @IsOptional()
+    @IsInt()
+    totalReviews?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    isActive?: boolean;
+
+    @IsOptional()
+    @IsInt()
+    businessProviderId?: number;
 }

@@ -54,37 +54,17 @@ export class LocationService {
             phoneNumber: userData.phoneNumber || `temp_${Date.now()}`, // Temporary phone number
             name: userData.name,
             email: userData.email,
-            gender: userData.gender as any,
-            pronouns: userData.pronouns as any,
+            gender: userData.gender,
+            pronouns: userData.pronouns,
+            dateOfBirth: userData.dateOfBirth,
             profileImage: userData.profileImage,
-            address: userData.address,
-            city: userData.city,
-            state: userData.state,
-            zipCode: userData.zipCode,
             isActive: true,
             roles: [UserRole.LOCATION_PROVIDER],
           },
         });
         actualUserId = user.id;
       } else if (!actualUserId) {
-        // Legacy format - create user from individual fields
-        const user = await this.prisma.user.create({
-          data: {
-            phoneNumber: dto.phoneNumber || `temp_${Date.now()}`, // Temporary phone number
-            name: dto.name,
-            email: dto.email,
-            gender: dto.gender as any,
-            pronouns: dto.pronouns as any,
-            profileImage: dto.profileImage,
-            address: dto.address,
-            city: dto.city,
-            state: dto.state,
-            zipCode: dto.zipCode,
-            isActive: true,
-            roles: [UserRole.LOCATION_PROVIDER],
-          },
-        });
-        actualUserId = user.id;
+        throw new BadRequestException('User ID or user data must be provided');
       }
 
       // Check if userId is unique for location providers
@@ -93,7 +73,7 @@ export class LocationService {
       });
       if (exists) throw new BadRequestException('Location provider for this user already exists');
 
-      // Create location provider with location-specific fields
+      // Create location provider with location-specific fields (address fields now in LocationProvider)
       return await this.prisma.locationProvider.create({
         data: {
           userId: actualUserId,
@@ -101,6 +81,12 @@ export class LocationService {
           contactPerson: dto.contactPerson,
           website: dto.website,
           fullAddress: dto.fullAddress,
+          address: dto.address,
+          city: dto.city,
+          state: dto.state,
+          zipCode: dto.zipCode,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
         },
         include: {
           User: true,
@@ -140,38 +126,30 @@ export class LocationService {
       let userUpdateData: Prisma.UserUpdateInput = {};
       let locationUpdateData: Prisma.LocationProviderUpdateInput = {};
 
-      // New format - userData object
+      // Handle userData object (new format)
       if (dto.userData) {
         const userData = dto.userData;
         if (userData.phoneNumber !== undefined) userUpdateData.phoneNumber = userData.phoneNumber;
         if (userData.name !== undefined) userUpdateData.name = userData.name;
         if (userData.email !== undefined) userUpdateData.email = userData.email;
-        if (userData.gender !== undefined) userUpdateData.gender = userData.gender as any;
-        if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns as any;
+        if (userData.gender !== undefined) userUpdateData.gender = userData.gender;
+        if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns;
+        if (userData.dateOfBirth !== undefined) userUpdateData.dateOfBirth = userData.dateOfBirth;
         if (userData.profileImage !== undefined) userUpdateData.profileImage = userData.profileImage;
-        if (userData.address !== undefined) userUpdateData.address = userData.address;
-        if (userData.city !== undefined) userUpdateData.city = userData.city;
-        if (userData.state !== undefined) userUpdateData.state = userData.state;
-        if (userData.zipCode !== undefined) userUpdateData.zipCode = userData.zipCode;
+        if (userData.isActive !== undefined) userUpdateData.isActive = userData.isActive;
       }
 
-      // Legacy format support - individual fields (for backward compatibility)
-      if (dto.name !== undefined) userUpdateData.name = dto.name;
-      if (dto.email !== undefined) userUpdateData.email = dto.email;
-      if (dto.phoneNumber !== undefined) userUpdateData.phoneNumber = dto.phoneNumber;
-      if (dto.gender !== undefined) userUpdateData.gender = dto.gender as any;
-      if (dto.pronouns !== undefined) userUpdateData.pronouns = dto.pronouns as any;
-      if (dto.profileImage !== undefined) userUpdateData.profileImage = dto.profileImage;
-      if (dto.address !== undefined) userUpdateData.address = dto.address;
-      if (dto.city !== undefined) userUpdateData.city = dto.city;
-      if (dto.state !== undefined) userUpdateData.state = dto.state;
-      if (dto.zipCode !== undefined) userUpdateData.zipCode = dto.zipCode;
-
-      // Location provider specific fields
+      // Location provider specific fields (address fields now in LocationProvider)
       if (dto.phone !== undefined) locationUpdateData.phone = dto.phone;
       if (dto.contactPerson !== undefined) locationUpdateData.contactPerson = dto.contactPerson;
       if (dto.website !== undefined) locationUpdateData.website = dto.website;
       if (dto.fullAddress !== undefined) locationUpdateData.fullAddress = dto.fullAddress;
+      if (dto.address !== undefined) locationUpdateData.address = dto.address;
+      if (dto.city !== undefined) locationUpdateData.city = dto.city;
+      if (dto.state !== undefined) locationUpdateData.state = dto.state;
+      if (dto.zipCode !== undefined) locationUpdateData.zipCode = dto.zipCode;
+      if (dto.latitude !== undefined) locationUpdateData.latitude = dto.latitude;
+      if (dto.longitude !== undefined) locationUpdateData.longitude = dto.longitude;
 
       // Update user data if there are changes
       if (Object.keys(userUpdateData).length > 0) {

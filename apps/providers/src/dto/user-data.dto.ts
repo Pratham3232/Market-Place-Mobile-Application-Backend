@@ -1,9 +1,15 @@
-import { IsString, IsOptional, IsEmail, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsBoolean, IsDateString, IsEnum, IsArray, IsInt } from 'class-validator';
+import { UserRole, Gender, Pronouns } from '@prisma/client';
 
 export class UserDataDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(UserRole, { each: true })
+  roles?: UserRole[];
 
   @IsOptional()
   @IsString()
@@ -14,32 +20,24 @@ export class UserDataDto {
   email?: string;
 
   @IsOptional()
-  @IsString()
-  gender?: string;
+  @IsEnum(Gender)
+  gender?: Gender;
 
   @IsOptional()
-  @IsString()
-  pronouns?: string;
+  @IsEnum(Pronouns)
+  pronouns?: Pronouns;
+
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: Date;
 
   @IsOptional()
   @IsString()
   profileImage?: string;
 
   @IsOptional()
-  @IsString()
-  address?: string;
-
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @IsOptional()
-  @IsString()
-  zipCode?: string;
+  @IsInt()
+  xpiId?: number;
 
   @IsOptional()
   @IsBoolean()

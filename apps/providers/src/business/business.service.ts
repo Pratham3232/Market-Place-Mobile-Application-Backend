@@ -55,37 +55,17 @@ export class BusinessService {
             phoneNumber: userData.phoneNumber || `temp_${Date.now()}`, // Temporary phone number
             name: userData.name,
             email: userData.email,
-            gender: userData.gender as any,
-            pronouns: userData.pronouns as any,
+            gender: userData.gender,
+            pronouns: userData.pronouns,
+            dateOfBirth: userData.dateOfBirth,
             profileImage: userData.profileImage,
-            address: userData.address,
-            city: userData.city,
-            state: userData.state,
-            zipCode: userData.zipCode,
             isActive: true,
             roles: [UserRole.BUSINESS_PROVIDER],
           },
         });
         actualUserId = user.id;
       } else if (!actualUserId) {
-        // Legacy format - create user from individual fields
-        const user = await this.prisma.user.create({
-          data: {
-            phoneNumber: `temp_${Date.now()}`, // Temporary phone number
-            name: dto.name,
-            email: dto.email,
-            gender: dto.gender as any,
-            pronouns: dto.pronouns as any,
-            profileImage: dto.profileImage,
-            address: dto.address,
-            city: dto.city,
-            state: dto.state,
-            zipCode: dto.zipCode,
-            isActive: dto.isActive ?? true,
-            roles: [UserRole.BUSINESS_PROVIDER],
-          },
-        });
-        actualUserId = user.id;
+        throw new BadRequestException('User ID or user data must be provided');
       }
 
       // Check if userId is unique for business providers
@@ -94,13 +74,19 @@ export class BusinessService {
       });
       if (exists) throw new BadRequestException('Business provider for this user already exists');
 
-      // Create business provider with business-specific fields
+      // Create business provider with business-specific fields (address fields now in BusinessProvider)
       const businessProvider = await this.prisma.businessProvider.create({
         data: {
           userId: actualUserId,
           businessName: dto.businessName,
           businessType: dto.businessType,
           businessEmail: dto.businessEmail,
+          address: dto.address,
+          city: dto.city,
+          state: dto.state,
+          zipCode: dto.zipCode,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
           availabilityModification: dto.availabilityModification ?? false,
           serviceModification: dto.serviceModification ?? false,
           deliveryOptionChoices: dto.deliveryOptionChoices ?? false,
@@ -168,38 +154,29 @@ export class BusinessService {
       let userUpdateData: Prisma.UserUpdateInput = {};
       let businessUpdateData: Prisma.BusinessProviderUpdateInput = {};
 
-      // New format - userData object
+      // Handle userData object (new format)
       if (dto.userData) {
         const userData = dto.userData;
         if (userData.phoneNumber !== undefined) userUpdateData.phoneNumber = userData.phoneNumber;
         if (userData.name !== undefined) userUpdateData.name = userData.name;
         if (userData.email !== undefined) userUpdateData.email = userData.email;
-        if (userData.gender !== undefined) userUpdateData.gender = userData.gender as any;
-        if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns as any;
+        if (userData.gender !== undefined) userUpdateData.gender = userData.gender;
+        if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns;
+        if (userData.dateOfBirth !== undefined) userUpdateData.dateOfBirth = userData.dateOfBirth;
         if (userData.profileImage !== undefined) userUpdateData.profileImage = userData.profileImage;
-        if (userData.address !== undefined) userUpdateData.address = userData.address;
-        if (userData.city !== undefined) userUpdateData.city = userData.city;
-        if (userData.state !== undefined) userUpdateData.state = userData.state;
-        if (userData.zipCode !== undefined) userUpdateData.zipCode = userData.zipCode;
+        if (userData.isActive !== undefined) userUpdateData.isActive = userData.isActive;
       }
 
-      // Legacy format support - individual fields (for backward compatibility)
-      if (dto.name !== undefined) userUpdateData.name = dto.name;
-      if (dto.email !== undefined) userUpdateData.email = dto.email;
-      if (dto.phoneNumber !== undefined) userUpdateData.phoneNumber = dto.phoneNumber;
-      if (dto.gender !== undefined) userUpdateData.gender = dto.gender as any;
-      if (dto.pronouns !== undefined) userUpdateData.pronouns = dto.pronouns as any;
-      if (dto.profileImage !== undefined) userUpdateData.profileImage = dto.profileImage;
-      if (dto.address !== undefined) userUpdateData.address = dto.address;
-      if (dto.city !== undefined) userUpdateData.city = dto.city;
-      if (dto.state !== undefined) userUpdateData.state = dto.state;
-      if (dto.zipCode !== undefined) userUpdateData.zipCode = dto.zipCode;
-      if (dto.isActive !== undefined) userUpdateData.isActive = dto.isActive;
-
-      // Business provider specific fields
+      // Business provider specific fields (including address fields which are now in BusinessProvider)
       if (dto.businessName !== undefined) businessUpdateData.businessName = dto.businessName;
       if (dto.businessType !== undefined) businessUpdateData.businessType = dto.businessType;
       if (dto.businessEmail !== undefined) businessUpdateData.businessEmail = dto.businessEmail;
+      if (dto.address !== undefined) businessUpdateData.address = dto.address;
+      if (dto.city !== undefined) businessUpdateData.city = dto.city;
+      if (dto.state !== undefined) businessUpdateData.state = dto.state;
+      if (dto.zipCode !== undefined) businessUpdateData.zipCode = dto.zipCode;
+      if (dto.latitude !== undefined) businessUpdateData.latitude = dto.latitude;
+      if (dto.longitude !== undefined) businessUpdateData.longitude = dto.longitude;
       if (dto.availabilityModification !== undefined) businessUpdateData.availabilityModification = dto.availabilityModification;
       if (dto.serviceModification !== undefined) businessUpdateData.serviceModification = dto.serviceModification;
       if (dto.deliveryOptionChoices !== undefined) businessUpdateData.deliveryOptionChoices = dto.deliveryOptionChoices;

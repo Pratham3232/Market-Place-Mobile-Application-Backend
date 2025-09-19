@@ -9,7 +9,8 @@ import {
   IsArray, 
   ArrayMinSize,
   IsInt,
-  IsBoolean
+  IsBoolean,
+  IsDateString
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -44,28 +45,16 @@ export class CreateUserDto {
   profileImage?: string;
 
   @IsOptional()
-  @IsString()
-  address?: string;
-
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @IsOptional()
-  @IsString()
-  zipCode?: string;
-
-  @IsOptional()
   @IsInt()
   xpiId?: number;
 
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: Date;
 }
 
 export class RegisterUserDto {

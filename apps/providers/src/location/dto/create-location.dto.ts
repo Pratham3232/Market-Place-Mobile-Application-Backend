@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsOptional, IsEmail, IsDateString, ValidateNested } from 'class-validator';
+import { IsInt, IsString, IsOptional, ValidateNested, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserDataDto } from '../../dto/user-data.dto';
 
@@ -12,6 +12,7 @@ export class CreateLocationDto {
 	@Type(() => UserDataDto)
 	userData?: UserDataDto;
 
+	// LocationProvider specific fields
 	@IsOptional()
 	@IsString()
 	phone?: string;
@@ -27,31 +28,6 @@ export class CreateLocationDto {
 	@IsOptional()
 	@IsString()
 	fullAddress?: string;
-
-	// Legacy fields for backward compatibility
-	@IsOptional()
-	@IsString()
-	name?: string;
-
-	@IsOptional()
-	@IsEmail()
-	email?: string;
-
-	@IsOptional()
-	@IsString()
-	phoneNumber?: string;
-
-	@IsOptional()
-	@IsString()
-	gender?: string;
-
-	@IsOptional()
-	@IsString()
-	pronouns?: string;
-
-	@IsOptional()
-	@IsString()
-	profileImage?: string;
 
 	@IsOptional()
 	@IsString()
@@ -70,10 +46,10 @@ export class CreateLocationDto {
 	zipCode?: string;
 
 	@IsOptional()
-	@IsDateString()
-	createdAt?: Date;
+	@IsNumber()
+	latitude?: number;
 
 	@IsOptional()
-	@IsDateString()
-	updatedAt?: Date;
+	@IsNumber()
+	longitude?: number;
 }

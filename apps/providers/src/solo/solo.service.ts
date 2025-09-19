@@ -64,37 +64,17 @@ export class SoloService {
 						phoneNumber: userData.phoneNumber || `temp_${Date.now()}`, // Temporary phone number
 						name: userData.name,
 						email: userData.email,
-						gender: userData.gender as any,
-						pronouns: userData.pronouns as any,
+						gender: userData.gender,
+						pronouns: userData.pronouns,
+						dateOfBirth: userData.dateOfBirth,
 						profileImage: userData.profileImage,
-						address: userData.address,
-						city: userData.city,
-						state: userData.state,
-						zipCode: userData.zipCode,
 						isActive: true,
 						roles: [UserRole.SOLO_PROVIDER],
 					},
 				});
 				actualUserId = user.id;
 			} else if (!actualUserId) {
-				// Legacy format - create user from individual fields
-				const user = await this.prisma.user.create({
-					data: {
-						phoneNumber: `temp_${Date.now()}`, // Temporary phone number
-						name: dto.name,
-						email: dto.email,
-						gender: dto.gender as any,
-						pronouns: dto.pronouns as any,
-						profileImage: dto.profileImage,
-						address: dto.address,
-						city: dto.city,
-						state: dto.state,
-						zipCode: dto.zipCode,
-						isActive: dto.isActive ?? true,
-						roles: [UserRole.SOLO_PROVIDER],
-					},
-				});
-				actualUserId = user.id;
+				throw new BadRequestException('User ID or user data must be provided');
 			}
 
 			// Check if userId is unique for providers
@@ -103,17 +83,22 @@ export class SoloService {
 			});
 			if (exists) throw new BadRequestException('Provider for this user already exists');
 
-			// Create provider with provider-specific fields
+			// Create provider with provider-specific fields (address fields now in Provider)
 			return await this.prisma.provider.create({
 				data: {
 					userId: actualUserId,
-					dateOfBirth: dto.dateOfBirth,
-					bio: dto.bio,
+					address: dto.address,
+					city: dto.city,
+					state: dto.state,
+					zipCode: dto.zipCode,
+					latitude: dto.latitude,
+					longitude: dto.longitude,
 					soloProvider: dto.soloProvider ?? true,
 					isVerified: dto.isVerified ?? false,
 					rating: dto.rating ?? 0,
 					totalReviews: dto.totalReviews ?? 0,
 					isActive: dto.isActive ?? true,
+					businessProviderId: dto.businessProviderId,
 				},
 				include: {
 					user: true,
@@ -149,47 +134,48 @@ export class SoloService {
 			});
 			if (!provider || !(provider as any).soloProvider) throw new NotFoundException('Solo provider not found');
 
-			// Handle both new and legacy DTO formats
+			// Separate user data and provider data updates
 			let userUpdateData: Prisma.UserUpdateInput = {};
 			let providerUpdateData: Prisma.ProviderUpdateInput = {};
 
-			// New format - userData object
+			// Handle userData object (new format)
 			if (dto.userData) {
 				const userData = dto.userData;
 				if (userData.phoneNumber !== undefined) userUpdateData.phoneNumber = userData.phoneNumber;
 				if (userData.name !== undefined) userUpdateData.name = userData.name;
 				if (userData.email !== undefined) userUpdateData.email = userData.email;
-				if (userData.gender !== undefined) userUpdateData.gender = userData.gender as any;
-				if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns as any;
+				if (userData.gender !== undefined) userUpdateData.gender = userData.gender;
+				if (userData.pronouns !== undefined) userUpdateData.pronouns = userData.pronouns;
+				if (userData.dateOfBirth !== undefined) userUpdateData.dateOfBirth = userData.dateOfBirth;
 				if (userData.profileImage !== undefined) userUpdateData.profileImage = userData.profileImage;
-				if (userData.address !== undefined) userUpdateData.address = userData.address;
-				if (userData.city !== undefined) userUpdateData.city = userData.city;
-				if (userData.state !== undefined) userUpdateData.state = userData.state;
-				if (userData.zipCode !== undefined) userUpdateData.zipCode = userData.zipCode;
+				if (userData.isActive !== undefined) userUpdateData.isActive = userData.isActive;
 			}
 
-			// Legacy format support - individual fields (for backward compatibility)
-			if (dto.name !== undefined) userUpdateData.name = dto.name;
-			if (dto.email !== undefined) userUpdateData.email = dto.email;
-			if (dto.phoneNumber !== undefined) userUpdateData.phoneNumber = dto.phoneNumber;
-			if (dto.gender !== undefined) userUpdateData.gender = dto.gender as any;
-			if (dto.pronouns !== undefined) userUpdateData.pronouns = dto.pronouns as any;
-			if (dto.profileImage !== undefined) userUpdateData.profileImage = dto.profileImage;
-			if (dto.address !== undefined) userUpdateData.address = dto.address;
-			if (dto.city !== undefined) userUpdateData.city = dto.city;
-			if (dto.state !== undefined) userUpdateData.state = dto.state;
-			if (dto.zipCode !== undefined) userUpdateData.zipCode = dto.zipCode;
-
-			// Provider specific fields
-			if (dto.dateOfBirth !== undefined) providerUpdateData.dateOfBirth = dto.dateOfBirth;
-			if (dto.bio !== undefined) providerUpdateData.bio = dto.bio;
+			// Provider specific fields (address fields are now in Provider model)
+			if (dto.address !== undefined) providerUpdateData.address = dto.address;
+			if (dto.city !== undefined) providerUpdateData.city = dto.city;
+			if (dto.state !== undefined) providerUpdateData.state = dto.state;
+			if (dto.zipCode !== undefined) providerUpdateData.zipCode = dto.zipCode;
+			if (dto.latitude !== undefined) providerUpdateData.latitude = dto.latitude;
+			if (dto.longitude !== undefined) providerUpdateData.longitude = dto.longitude;
 			if (dto.soloProvider !== undefined) providerUpdateData.soloProvider = dto.soloProvider;
 			if (dto.isVerified !== undefined) providerUpdateData.isVerified = dto.isVerified;
 			if (dto.rating !== undefined) providerUpdateData.rating = dto.rating;
 			if (dto.totalReviews !== undefined) providerUpdateData.totalReviews = dto.totalReviews;
 			if (dto.isActive !== undefined) {
 				providerUpdateData.isActive = dto.isActive;
-				userUpdateData.isActive = dto.isActive;
+				userUpdateData.isActive = dto.isActive; // Keep both in sync
+			}
+			if (dto.businessProviderId !== undefined) {
+				if (dto.businessProviderId) {
+					providerUpdateData.businessProvider = {
+						connect: { id: dto.businessProviderId }
+					};
+				} else {
+					providerUpdateData.businessProvider = {
+						disconnect: true
+					};
+				}
 			}
 
 			// Update user data if there are changes

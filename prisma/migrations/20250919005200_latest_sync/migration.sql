@@ -38,11 +38,8 @@ CREATE TABLE "User" (
     "email" TEXT,
     "gender" "Gender",
     "pronouns" "Pronouns",
+    "dateOfBirth" TIMESTAMP(3),
     "profileImage" TEXT,
-    "address" TEXT,
-    "city" TEXT,
-    "state" TEXT,
-    "zipCode" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -51,8 +48,12 @@ CREATE TABLE "User" (
 CREATE TABLE "Provider" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "dateOfBirth" TIMESTAMP(3),
-    "bio" TEXT,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
     "soloProvider" BOOLEAN DEFAULT false,
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "rating" DOUBLE PRECISION DEFAULT 0,
@@ -72,6 +73,12 @@ CREATE TABLE "BusinessProvider" (
     "businessName" TEXT NOT NULL,
     "businessType" TEXT NOT NULL,
     "businessEmail" TEXT,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
     "availabilityModification" BOOLEAN NOT NULL DEFAULT false,
     "serviceModification" BOOLEAN NOT NULL DEFAULT false,
     "deliveryOptionChoices" BOOLEAN NOT NULL DEFAULT false,
@@ -111,6 +118,12 @@ CREATE TABLE "LocationProvider" (
     "contactPerson" TEXT,
     "website" TEXT,
     "fullAddress" TEXT,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -227,6 +240,7 @@ CREATE TABLE "Service" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "providerId" INTEGER,
     "serviceCategoryId" INTEGER,
+    "activityId" INTEGER,
     "businessProviderId" INTEGER,
 
     CONSTRAINT "Service_pkey" PRIMARY KEY ("id")
@@ -255,16 +269,13 @@ CREATE UNIQUE INDEX "User_phoneNumber_key" ON "User"("phoneNumber");
 CREATE UNIQUE INDEX "User_xpiId_key" ON "User"("xpiId");
 
 -- CreateIndex
-CREATE INDEX "User_city_state_idx" ON "User"("city", "state");
+CREATE INDEX "User_phoneNumber_id_idx" ON "User"("phoneNumber", "id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Provider_userId_key" ON "Provider"("userId");
 
 -- CreateIndex
-CREATE INDEX "Provider_isActive_isVerified_idx" ON "Provider"("isActive", "isVerified");
-
--- CreateIndex
-CREATE INDEX "Provider_soloProvider_businessProviderId_idx" ON "Provider"("soloProvider", "businessProviderId");
+CREATE INDEX "Provider_isActive_isVerified_soloProvider_businessProviderI_idx" ON "Provider"("isActive", "isVerified", "soloProvider", "businessProviderId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "BusinessProvider_userId_key" ON "BusinessProvider"("userId");
@@ -309,10 +320,7 @@ CREATE UNIQUE INDEX "ServiceCategory_categoryName_key" ON "ServiceCategory"("cat
 CREATE UNIQUE INDEX "Activity_serviceCategoryId_name_key" ON "Activity"("serviceCategoryId", "name");
 
 -- CreateIndex
-CREATE INDEX "Service_category_subCategory_ageMin_ageMax_idx" ON "Service"("category", "subCategory", "ageMin", "ageMax");
-
--- CreateIndex
-CREATE INDEX "Service_providerId_businessProviderId_isActive_idx" ON "Service"("providerId", "businessProviderId", "isActive");
+CREATE INDEX "Service_serviceCategoryId_activityId_ageMin_ageMax_provider_idx" ON "Service"("serviceCategoryId", "activityId", "ageMin", "ageMax", "providerId", "businessProviderId", "isActive");
 
 -- CreateIndex
 CREATE INDEX "Availability_providerId_locationProviderId_businessProvider_idx" ON "Availability"("providerId", "locationProviderId", "businessProviderId", "dayOfWeek", "isActive");
@@ -364,6 +372,9 @@ ALTER TABLE "Service" ADD CONSTRAINT "Service_providerId_fkey" FOREIGN KEY ("pro
 
 -- AddForeignKey
 ALTER TABLE "Service" ADD CONSTRAINT "Service_serviceCategoryId_fkey" FOREIGN KEY ("serviceCategoryId") REFERENCES "ServiceCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Service" ADD CONSTRAINT "Service_activityId_fkey" FOREIGN KEY ("activityId") REFERENCES "Activity"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Service" ADD CONSTRAINT "Service_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;

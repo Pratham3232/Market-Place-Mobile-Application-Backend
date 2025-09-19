@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, IsBoolean, IsDateString, IsNumber, IsEmail, ValidateNested } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsBoolean, IsNumber, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserDataDto } from '../../dto/user-data.dto';
 
@@ -12,13 +12,30 @@ export class CreateSoloDto {
 	@Type(() => UserDataDto)
 	userData?: UserDataDto;
 
+	// Provider specific fields (now in Provider model)
 	@IsOptional()
-	@IsDateString()
-	dateOfBirth?: Date;
+	@IsString()
+	address?: string;
 
 	@IsOptional()
 	@IsString()
-	bio?: string;
+	city?: string;
+
+	@IsOptional()
+	@IsString()
+	state?: string;
+
+	@IsOptional()
+	@IsString()
+	zipCode?: string;
+
+	@IsOptional()
+	@IsNumber()
+	latitude?: number;
+
+	@IsOptional()
+	@IsNumber()
+	longitude?: number;
 
 	@IsOptional()
 	@IsBoolean()
@@ -43,45 +60,4 @@ export class CreateSoloDto {
 	@IsOptional()
 	@IsInt()
 	businessProviderId?: number;
-
-	// Legacy fields for backward compatibility
-	@IsOptional()
-	@IsString()
-	name?: string;
-
-	@IsOptional()
-	@IsEmail()
-	email?: string;
-
-	@IsOptional()
-	@IsString()
-	phoneNumber?: string;
-
-	@IsOptional()
-	@IsString()
-	gender?: string;
-
-	@IsOptional()
-	@IsString()
-	pronouns?: string;
-
-	@IsOptional()
-	@IsString()
-	profileImage?: string;
-
-	@IsOptional()
-	@IsString()
-	address?: string;
-
-	@IsOptional()
-	@IsString()
-	city?: string;
-
-	@IsOptional()
-	@IsString()
-	state?: string;
-
-	@IsOptional()
-	@IsString()
-	zipCode?: string;
 }

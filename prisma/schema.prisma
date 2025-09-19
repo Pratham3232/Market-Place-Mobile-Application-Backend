@@ -20,25 +20,26 @@ model User {
   email            String?
   gender           Gender?
   pronouns         Pronouns?
+  dateOfBirth      DateTime?
   profileImage     String?
-  address          String?
-  city             String?
-  state            String?
-  zipCode          String?
-    // Relationships
+  // Relationships
   provider         Provider?
   BusinessProvider BusinessProvider?
   LocationProvider LocationProvider?
 
-  @@index([city, state])
+  @@index([phoneNumber, id])
 }
 
 model Provider {
   id                 Int               @id @default(autoincrement())
   userId             Int               @unique
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dateOfBirth        DateTime?
-  bio                String?
+  address            String?
+  city               String?
+  state              String?
+  zipCode            String?
+  latitude           Float?
+  longitude          Float?
   soloProvider       Boolean?          @default(false)
   isVerified         Boolean           @default(false)
   rating             Float?            @default(0)
@@ -53,8 +54,7 @@ model Provider {
   availability       Availability[]
   conversations      Conversation[]
 
-  @@index([isActive, isVerified])
-  @@index([soloProvider, businessProviderId])
+  @@index([isActive, isVerified, soloProvider, businessProviderId])
 }
 
 
@@ -65,6 +65,12 @@ model BusinessProvider {
   businessName   String
   businessType   String
   businessEmail  String?
+  address        String?
+  city           String?
+  state          String?
+  zipCode       String?
+  latitude      Float?
+  longitude     Float?
   availabilityModification Boolean @default(false)
   serviceModification     Boolean @default(false)
   deliveryOptionChoices   Boolean @default(false)
@@ -106,6 +112,12 @@ model LocationProvider {
   contactPerson  String?
   website        String?
   fullAddress    String?
+  address        String?
+  city           String?
+  state          String?
+  zipCode        String?
+  latitude       Float?
+  longitude      Float?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   LocationMember LocationMember[]
@@ -211,6 +223,7 @@ model Activity {
   serviceCategory  ServiceCategory @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  services         Service[]
 
   @@unique([serviceCategoryId, name])
 }
@@ -238,11 +251,13 @@ model Service {
   serviceCategoryId Int?
   serviceCategory   ServiceCategory? @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
 
+  activityId Int?
+  activity   Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  
   businessProviderId Int?
   businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id], onDelete: Cascade)
 
-  @@index([category, subCategory, ageMin, ageMax])
-  @@index([providerId, businessProviderId, isActive])
+  @@index([serviceCategoryId, activityId, ageMin, ageMax, providerId, businessProviderId, isActive])
 }
 
 model Availability {
