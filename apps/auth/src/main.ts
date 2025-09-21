@@ -12,8 +12,6 @@ dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthModule);
-
-
   const rabbitUrl = process.env.RABBITMQ_HOST as string;
 
   const configService = app.get(ConfigService)

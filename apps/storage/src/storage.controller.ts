@@ -1,21 +1,30 @@
 import {
   Controller,
   Post,
+  Get,
+  Param,
   UploadedFile,
   Body,
   UseInterceptors,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { StorageService } from './storage.service';
 import { UserRole } from '@prisma/client';
+import { QUEUE_PATTERNS } from '@app/common';
+import { UserProfileImageUploadJob } from './dto/user-profile-image-upload-job.dto';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('storage')
 @Controller('storage')
 export class StorageController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    @Inject('USER_PROFILE_QUEUE') private readonly userProfileQueue: ClientProxy
+  ) {}
 
   @Post('/upload')
   @UseInterceptors(
@@ -42,18 +51,40 @@ export class StorageController {
     },
   })
   @ApiResponse({ status: 201, description: 'File uploaded successfully', schema: {
-    example: { url: 'https://s3.amazonaws.com/bucket/image.png' }
+    example: { success: true, message: 'Profile image queued for upload and processing' }
   }})
   @ApiResponse({ status: 400, description: 'Missing file or user details' })
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('user_id') userId: string,
-    @Body('user_type') userType: UserRole,
+    // @Body('user_type') userType: UserRole,
   ) {
     if (!file) throw new BadRequestException('file is required');
-    if (!userId || !userType) throw new BadRequestException('user_id and user_type are required');
+    if (!userId) throw new BadRequestException('user_id is required');
 
-    const result = await this.storageService.uploadImage(file, userId, userType);
-    return result; // { url: string }
+    // Prepare job data for queue
+    const jobData: UserProfileImageUploadJob = {
+      userId,
+      file: {
+        fileBuffer: file.buffer,
+        fileName: file.originalname,
+        mimeType: file.mimetype,
+      },
+    };
+
+    // Send job to queue for background processing
+    this.userProfileQueue.emit(QUEUE_PATTERNS.UPLOAD_USER_PROFILE_IMAGE, jobData);
+
+    return {
+      success: true,
+      message: 'Profile image queued for upload and processing',
+    };
+  }
+
+  @Get('/user/:userId/profile-image')
+  @ApiOperation({ summary: 'Get user profile image URL' })
+  @ApiResponse({ status: 200, description: 'User profile image retrieved successfully' })
+  async getUserProfileImage(@Param('userId') userId: string) {
+    return this.storageService.getUserProfileImage(userId);
   }
 }

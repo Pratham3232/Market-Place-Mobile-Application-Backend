@@ -58,7 +58,15 @@ export class UpdateServiceDto {
   @IsInt()
   @IsOptional()
   serviceCategoryId?: number;
-  }
+
+  @IsInt()
+  @IsOptional()
+  activityId?: number;
+
+  @IsInt()
+  @IsOptional()
+  createdBy?: number;
+}
   
 export class UpdateLocationServiceDto {
     @IsString()

@@ -7,6 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model User {
   id               Int               @id @default(autoincrement())
   phoneNumber      String            @unique
@@ -29,6 +30,8 @@ model User {
 
   @@index([phoneNumber, id])
 }
+
+
 
 model Provider {
   id                 Int               @id @default(autoincrement())
@@ -56,7 +59,6 @@ model Provider {
 
   @@index([isActive, isVerified, soloProvider, businessProviderId])
 }
-
 
 model BusinessProvider {
   id             Int              @id @default(autoincrement())
@@ -86,7 +88,22 @@ model BusinessProvider {
   Services       Service[]
   Availability   Availability[]
   conversations  Conversation[]
+  linkExpiryAndUsages LinkExpiryAndUsage[]
 }
+
+model LinkExpiryAndUsage {
+  id         Int      @id @default(autoincrement())
+  businessProviderId Int
+  BusinessProvider   BusinessProvider @relation(fields: [businessProviderId], references: [id], onDelete: Cascade)
+  employeeUsed  Int[] @default([])
+  token      String   @unique
+  expiresAt  DateTime
+  limitConsumed Int
+  createdAt  DateTime @default(now())
+
+  @@index([id, businessProviderId, token, expiresAt])
+}
+
 
 model BusinessMember {
   id                 Int               @id @default(autoincrement())
@@ -124,6 +141,20 @@ model LocationProvider {
   LocationService LocationService[]
   Availability   Availability[]
   conversations  Conversation[]
+  locationImages LocationImage[]
+}
+
+model LocationImage {
+  id                 Int              @id @default(autoincrement())
+  locationProviderId Int
+  LocationProvider   LocationProvider @relation(fields: [locationProviderId], references: [id], onDelete: Cascade)
+  bucket             String
+  url                String
+  indoorOutdoorType  LocationImageType
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([locationProviderId, bucket])
 }
 
 model LocationService {
@@ -339,4 +370,9 @@ enum Pronouns {
   SHE_HER
   THEY_THEM
   OTHER
+}
+
+enum LocationImageType {
+  INDOOR
+  OUTDOOR
 }

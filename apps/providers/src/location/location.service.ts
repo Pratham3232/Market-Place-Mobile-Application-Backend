@@ -1,16 +1,19 @@
 import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { AUTH_SERVICE } from '@app/common';
+import { AUTH_SERVICE, QUEUE_PATTERNS, STORAGE_SERVICE } from '@app/common';
 import { PrismaService } from '../../../../libs/common/src/prisma/prisma.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { UploadLocationImagesDto } from './dto/upload-location-images.dto';
+import { LocationImageUploadJob } from './dto/location-image-upload-job.dto';
 import { UserRole, Prisma } from '@prisma/client';
 
 @Injectable()
 export class LocationService {
   constructor(
     private prisma: PrismaService,
-    @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy
+    @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy,
+    @Inject(STORAGE_SERVICE) private readonly storageClient: ClientProxy
   ) {}
 
   async findAll() {
@@ -188,6 +191,74 @@ export class LocationService {
       return {
         success: false,
         message: err.message || 'Failed to delete location provider'
+      };
+    }
+  }
+
+  async uploadImages(locationProviderId: number, uploadDto: UploadLocationImagesDto, files: Express.Multer.File[], userId: string) {
+    try {
+      // Verify location provider exists
+      const locationProvider = await this.prisma.locationProvider.findUnique({
+        where: { id: locationProviderId },
+      });
+      if (!locationProvider) {
+        throw new NotFoundException('Location provider not found');
+      }
+
+      // Prepare job data for queue
+      const jobData: LocationImageUploadJob = {
+        locationProviderId,
+        userId,
+        images: files.map((file, index) => ({
+          fileBuffer: file.buffer,
+          fileName: file.originalname,
+          mimeType: file.mimetype,
+          indoorOutdoorType: uploadDto.imageTypes[index].indoorOutdoorType,
+        })),
+      };
+
+      // Send job to queue for background processing
+      this.storageClient.emit(QUEUE_PATTERNS.UPLOAD_LOCATION_IMAGES, jobData);
+
+      return {
+        success: true,
+        message: `Queued ${files.length} images for upload and processing`,
+        queuedCount: files.length,
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to queue image uploads'
+      };
+    }
+  }
+
+  async getImages(locationProviderId: number) {
+    try {
+      // Verify location provider exists
+      const locationProvider = await this.prisma.locationProvider.findUnique({
+        where: { id: locationProviderId },
+      });
+      if (!locationProvider) {
+        throw new NotFoundException('Location provider not found');
+      }
+
+      const images = await this.prisma.locationImage.findMany({
+        where: { locationProviderId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return {
+        success: true,
+        data: images,
+        count: images.length,
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to fetch images'
       };
     }
   }

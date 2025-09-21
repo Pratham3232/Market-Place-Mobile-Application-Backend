@@ -25,6 +25,9 @@ CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
 -- CreateEnum
 CREATE TYPE "Pronouns" AS ENUM ('HE_HIM', 'SHE_HER', 'THEY_THEM', 'OTHER');
 
+-- CreateEnum
+CREATE TYPE "LocationImageType" AS ENUM ('INDOOR', 'OUTDOOR');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
@@ -93,6 +96,19 @@ CREATE TABLE "BusinessProvider" (
 );
 
 -- CreateTable
+CREATE TABLE "LinkExpiryAndUsage" (
+    "id" SERIAL NOT NULL,
+    "businessProviderId" INTEGER NOT NULL,
+    "employeeUsed" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+    "token" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "limitConsumed" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LinkExpiryAndUsage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "BusinessMember" (
     "id" SERIAL NOT NULL,
     "businessId" INTEGER NOT NULL,
@@ -128,6 +144,19 @@ CREATE TABLE "LocationProvider" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "LocationProvider_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LocationImage" (
+    "id" SERIAL NOT NULL,
+    "locationProviderId" INTEGER NOT NULL,
+    "bucket" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "indoorOutdoorType" "LocationImageType" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LocationImage_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -281,6 +310,12 @@ CREATE INDEX "Provider_isActive_isVerified_soloProvider_businessProviderI_idx" O
 CREATE UNIQUE INDEX "BusinessProvider_userId_key" ON "BusinessProvider"("userId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "LinkExpiryAndUsage_token_key" ON "LinkExpiryAndUsage"("token");
+
+-- CreateIndex
+CREATE INDEX "LinkExpiryAndUsage_id_businessProviderId_token_expiresAt_idx" ON "LinkExpiryAndUsage"("id", "businessProviderId", "token", "expiresAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "BusinessMember_email_key" ON "BusinessMember"("email");
 
 -- CreateIndex
@@ -288,6 +323,9 @@ CREATE UNIQUE INDEX "BusinessMember_phoneNumber_key" ON "BusinessMember"("phoneN
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LocationProvider_userId_key" ON "LocationProvider"("userId");
+
+-- CreateIndex
+CREATE INDEX "LocationImage_locationProviderId_bucket_idx" ON "LocationImage"("locationProviderId", "bucket");
 
 -- CreateIndex
 CREATE INDEX "LocationService_category_wifiAvailability_sessionSize_idx" ON "LocationService"("category", "wifiAvailability", "sessionSize");
@@ -338,10 +376,16 @@ ALTER TABLE "Provider" ADD CONSTRAINT "Provider_businessProviderId_fkey" FOREIGN
 ALTER TABLE "BusinessProvider" ADD CONSTRAINT "BusinessProvider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LinkExpiryAndUsage" ADD CONSTRAINT "LinkExpiryAndUsage_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "BusinessMember" ADD CONSTRAINT "BusinessMember_businessProviderId_fkey" FOREIGN KEY ("businessProviderId") REFERENCES "BusinessProvider"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "LocationProvider" ADD CONSTRAINT "LocationProvider_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LocationImage" ADD CONSTRAINT "LocationImage_locationProviderId_fkey" FOREIGN KEY ("locationProviderId") REFERENCES "LocationProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "LocationService" ADD CONSTRAINT "LocationService_locationProviderId_fkey" FOREIGN KEY ("locationProviderId") REFERENCES "LocationProvider"("id") ON DELETE CASCADE ON UPDATE CASCADE;

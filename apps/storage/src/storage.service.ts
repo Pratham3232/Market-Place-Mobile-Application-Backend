@@ -1,13 +1,16 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { UserRole } from '@prisma/client';
+import { MessagePattern } from '@nestjs/microservices';
+import { PrismaService } from '../../../libs/common/src/prisma/prisma.service';
 
 @Injectable()
 export class StorageService {
+  private readonly logger = new Logger(StorageService.name);
   private blobServiceClient: BlobServiceClient;
   private readonly containerName = 'profile-images';
 
-  constructor() {
+  constructor(private prisma: PrismaService) {
     const conn = process.env.AZURE_STORAGE_CONNECTION_STRING;
     if (!conn) {
       throw new Error('AZURE_STORAGE_CONNECTION_STRING env var is required');
@@ -21,7 +24,7 @@ export class StorageService {
   async uploadImage(
     file: Express.Multer.File,
     userId: string,
-    userType: UserRole,
+    // userType: UserRole,
   ): Promise<{ status: boolean; url?: string; message?: string; error?: any }> {
     try {
       const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
@@ -30,10 +33,10 @@ export class StorageService {
       await containerClient.createIfNotExists({ access: 'container' }); // change to 'private' in prod
 
       // Make a safe blob name (avoid weird chars)
-      const safeUserType = encodeURIComponent(userType);
+      // const safeUserType = encodeURIComponent(userType);
       const safeUserId = encodeURIComponent(userId);
-      const timestamp = Date.now();
-      const blobName = `${safeUserType}/${safeUserId}/${timestamp}-${file.originalname}`;
+      // const timestamp = Date.now();
+      const blobName = `user/${safeUserId}/${file.originalname}`;
 
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
@@ -53,6 +56,47 @@ export class StorageService {
         status: false,
         error: err.message || 'Failed to upload image'
       }
+    }
+  }
+
+  @MessagePattern('upload_file')
+  async handleFileUpload(data: { file: Express.Multer.File; user_id: string }) {
+    this.logger.log(`Handling file upload for user: ${data.user_id}`);
+    return await this.uploadImage(data.file, data.user_id);
+  }
+
+  async getUserProfileImage(userId: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+        },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          userId: user.id,
+          name: user.name,
+          profileImage: user.profileImage,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get user profile image for user ${userId}:`, error);
+      return {
+        success: false,
+        message: error.message || 'Failed to retrieve user profile image',
+      };
     }
   }
 }

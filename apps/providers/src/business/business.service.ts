@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { ClientProxy } from '@nestjs/microservices';
 import { AUTH_SERVICE } from '@app/common';
 import { PrismaService } from '../../../../libs/common/src/prisma/prisma.service';
@@ -7,12 +8,155 @@ import { UpdateBusinessDto } from './dto/update-business.dto';
 import { SendEmployeeInvitationDto } from './dto/send-employee-invitation.dto';
 import { UserRole, Prisma } from '@prisma/client';
 
+// ...existing code...
+
 @Injectable()
 export class BusinessService {
   constructor(
     private prisma: PrismaService,
     @Inject(AUTH_SERVICE) private readonly authClient: ClientProxy
   ) {}
+
+  /**
+   * Verify onboarding link for employee
+   */
+  async verifyOnboardingLink(token: string) {
+    // Find link by token and check expiry and usage
+    const link = await this.prisma.linkExpiryAndUsage.findUnique({ where: { token } });
+    if (!link) {
+      return { success: false, message: 'Invalid or expired link' };
+    }
+    if (link.expiresAt < new Date()) {
+      return { success: false, message: 'Link has expired' };
+    }
+    if (link.limitConsumed <= 0) {
+      return { success: false, message: 'Link usage limit reached' };
+    }
+    return { success: true, businessProviderId: link.businessProviderId };
+  }
+
+  /**
+   * Onboard employee using onboarding link (token)
+   */
+  async onboardEmployeeViaLink(token: string, userData: any, serviceData: any, availabilityData: any) {
+    // 1. Verify link
+    const link = await this.prisma.linkExpiryAndUsage.findUnique({ where: { token } });
+    if (!link || link.expiresAt < new Date() || link.limitConsumed <= 0) {
+      return { success: false, message: 'Invalid or expired link' };
+    }
+    // 2. Add employee to business
+    const addResult = await this.addEmployeeToBusiness(link.businessProviderId, [{ userData, serviceData, availabilityData }]);
+    if (!addResult.success) {
+      return { success: false, message: addResult.results[0]?.message || 'Failed to onboard employee' };
+    }
+    // 3. Decrement usage and push userId to employeeUsed
+    const newUserId = addResult.results[0]?.user?.id;
+    await this.prisma.linkExpiryAndUsage.update({
+      where: { token },
+      data: {
+        limitConsumed: { decrement: 1 },
+        employeeUsed: {
+          push: newUserId
+        }
+      },
+    });
+    return { success: true, data: addResult.results[0] };
+  }
+
+
+  /**
+   * Add multiple employees to a business: creates user, provider, service, and availability for each.
+   * @param businessId - The businessProviderId to map employees to
+   * @param employees - Array of employee objects with user, service, and availability data
+   */
+  async addEmployeeToBusiness(businessId: number, employees: Array<{
+    userData: {
+      phoneNumber: string;
+      name?: string;
+      email?: string;
+      gender?: string;
+      pronouns?: string;
+      dateOfBirth?: Date;
+      profileImage?: string;
+    },
+    serviceData: any, // Should match CreateServiceDto
+    availabilityData: any // Should match CreateAvailabilityDto
+  }>) {
+    const results: Array<{
+      success: boolean;
+      user?: any;
+      provider?: any;
+      service?: any;
+      availability?: any;
+      message?: string;
+    }> = [];
+    for (const emp of employees) {
+      try {
+        // 1. Create user with BUSINESS_EMPLOYEE role
+        const user = await this.prisma.user.create({
+          data: {
+            phoneNumber: emp.userData.phoneNumber,
+            name: emp.userData.name,
+            email: emp.userData.email,
+            gender: emp.userData.gender as any, // Should be Gender enum or undefined
+            pronouns: emp.userData.pronouns as any, // Should be Pronouns enum or undefined
+            dateOfBirth: emp.userData.dateOfBirth,
+            profileImage: emp.userData.profileImage,
+            isActive: true,
+            roles: [UserRole.BUSINESS_EMPLOYEE],
+          },
+        });
+
+        // 2. Create provider entry mapped to businessProviderId
+        const provider = await this.prisma.provider.create({
+          data: {
+            userId: user.id,
+            businessProviderId: businessId,
+            soloProvider: false,
+            isActive: true,
+          },
+        });
+
+        // 3. Create service entry with providerId
+        const service = await this.prisma.service.create({
+          data: {
+            ...emp.serviceData,
+            providerId: provider.id,
+            businessProviderId: businessId,
+          },
+        });
+
+        // 4. Create availability entry with providerId
+        const availability = await this.prisma.availability.create({
+          data: {
+            ...emp.availabilityData,
+            providerId: provider.id,
+            businessProviderId: businessId,
+          },
+        });
+
+        results.push({
+          success: true,
+          user,
+          provider,
+          service,
+          availability,
+        });
+      } catch (err) {
+        results.push({
+          success: false,
+          message: err.message,
+        });
+      }
+    }
+    return {
+      success: results.every(r => r.success),
+      results,
+    };
+  }
+
+
+
 
   async findAll() {
     try {
@@ -311,6 +455,57 @@ export class BusinessService {
       return {
         success: false,
         message: err.message || 'Failed to send business employee invitation',
+      };
+    }
+  }
+
+  async getInviteLink(id: string) {
+    try {
+      // Get usage limit from env
+      const usageLimit = parseInt(process.env.INVITE_LINK_USAGE_LIMIT || '1', 10);
+      if (isNaN(usageLimit) || usageLimit < 1) {
+        throw new Error('Invalid INVITE_LINK_USAGE_LIMIT in environment');
+      }
+
+      // Check if business provider exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: Number(id) },
+      });
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      // Generate UUID token
+      const token = uuidv4();
+
+      // Set expiry to 12 hours from now
+      const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+
+      // Store in LinkExpiryAndUsage table
+      const link = await this.prisma.linkExpiryAndUsage.create({
+        data: {
+          businessProviderId: Number(id),
+          token,
+          expiresAt,
+          limitConsumed: usageLimit,
+        },
+      });
+
+      const inviteUrl = `${process.env.FRONTEND_BASE_URL}/onboard-employee?token=${token}`;
+
+      // Return the invite link (token)
+      return {
+        success: true,
+        message: 'Invite link generated successfully',
+        data: {
+          "inviteUrl": inviteUrl
+        },
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to generate invite link',
       };
     }
   }

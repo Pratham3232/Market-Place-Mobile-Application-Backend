@@ -2,60 +2,68 @@ import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, IsEnum, IsDecimal, 
 import { ServiceProviderOptions, BookingPreference, LocationBooking } from '@prisma/client';
 
 export class CreateServiceDto {
-	@IsString()
-	name: string;
+    @IsString()
+    name: string;
 
-	@IsString()
-	@IsOptional()
-	description?: string;
+    @IsString()
+    @IsOptional()
+    description?: string = "";
 
-	@IsDecimal()
-	pricePerHour: any; // Use string or Decimal type as per your setup
+    @IsDecimal()
+    pricePerHour: any; // Use string or Decimal type as per your setup
 
-	@IsString()
-	@IsOptional()
-	category?: string;
+    @IsString()
+    @IsOptional()
+    category?: string = "";
 
-	@IsInt()
-	@IsOptional()
-	ageMin?: number;
+    @IsInt()
+    @IsOptional()
+    ageMin?: number;
 
-	@IsInt()
-	@IsOptional()
-	ageMax?: number;
+    @IsInt()
+    @IsOptional()
+    ageMax?: number;
 
-	@IsArray()
-	@IsEnum(ServiceProviderOptions, { each: true })
-	@IsOptional()
-	serviceProviderOptions?: ServiceProviderOptions[];
+    @IsArray()
+    @IsEnum(ServiceProviderOptions, { each: true })
+    @IsOptional()
+    serviceProviderOptions?: ServiceProviderOptions[];
 
-	@IsEnum(BookingPreference)
-	@IsOptional()
-	bookingPreference?: BookingPreference;
+    @IsEnum(BookingPreference)
+    @IsOptional()
+    bookingPreference?: BookingPreference;
 
-	@IsString()
-	@IsOptional()
-	subCategory?: string;
+    @IsString()
+    @IsOptional()
+    subCategory?: string;
 
-	@IsString()
-	@IsOptional()
-	additionalNotes?: string;
+    @IsString()
+    @IsOptional()
+    additionalNotes?: string;
 
-	@IsBoolean()
-	@IsOptional()
-	isActive?: boolean;
+    @IsBoolean()
+    @IsOptional()
+    isActive?: boolean = true;
 
-	@IsInt()
-	@IsOptional()
-	providerId?: number;
+    @IsInt()
+    @IsOptional()
+    providerId?: number;
 
-	@IsInt()
-	@IsOptional()
-	businessProviderId?: number;
+    @IsInt()
+    @IsOptional()
+    businessProviderId?: number;
 
-	@IsInt()
-	@IsOptional()
-	serviceCategoryId?: number;
+    @IsInt()
+    @IsOptional()
+    serviceCategoryId?: number;
+
+    @IsInt()
+    @IsOptional()
+    activityId?: number;
+
+    @IsInt()
+    @IsOptional()
+    createdBy?: number;
 }
 
 export class CreateLocationServiceDto {
