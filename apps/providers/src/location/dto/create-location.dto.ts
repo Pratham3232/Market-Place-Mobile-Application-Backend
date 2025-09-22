@@ -23,6 +23,10 @@ export class CreateLocationDto {
 	fullFacilityReserve?: boolean;
 
 	@IsOptional()
+	@IsInt()
+	capacity?: number;
+
+	@IsOptional()
 	@ValidateNested()
 	@Type(() => UserDataDto)
 	userData?: UserDataDto;

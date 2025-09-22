@@ -133,6 +133,7 @@ CREATE TABLE "LocationProvider" (
     "locationName" TEXT,
     "businessName" TEXT,
     "spacesAvailable" INTEGER,
+    "capacity" INTEGER,
     "fullFacilityReserve" BOOLEAN DEFAULT false,
     "phone" TEXT,
     "contactPerson" TEXT,
