@@ -86,25 +86,48 @@ export class BusinessService {
       success: boolean;
       user?: any;
       provider?: any;
-      service?: any;
+      service?: any | undefined;
       availability?: any;
       message?: string;
     }> = [];
     for (const emp of employees) {
       try {
+        // 0. Check if user with phoneNumber exists and has SOLO_PROVIDER role
+        const existingUser = await this.prisma.user.findUnique({
+          where: { phoneNumber: emp.userData.phoneNumber },
+        });
+        if (existingUser && existingUser.roles && existingUser.roles.includes(UserRole.SOLO_PROVIDER)) {
+          results.push({
+            success: false,
+            message: `User with phone number ${emp.userData.phoneNumber} already exists as SOLO_PROVIDER and cannot be added as BUSINESS_EMPLOYEE`,
+          });
+          continue;
+        }
+
         // 1. Create user with BUSINESS_EMPLOYEE role
+        // Only include dateOfBirth/profileImage if present
+        const userCreateData: any = {
+          phoneNumber: emp.userData.phoneNumber,
+          name: emp.userData.name,
+          email: emp.userData.email,
+          isActive: true,
+          roles: [UserRole.BUSINESS_EMPLOYEE],
+        };
+        if (emp.userData.gender !== undefined && emp.userData.gender !== null) {
+          userCreateData.gender = emp.userData.gender as any;
+        }
+        if (emp.userData.pronouns !== undefined && emp.userData.pronouns !== null) {
+          userCreateData.pronouns = emp.userData.pronouns as any;
+        }
+        if (emp.userData.dateOfBirth !== undefined && emp.userData.dateOfBirth !== null) {
+          userCreateData.dateOfBirth = emp.userData.dateOfBirth;
+        }
+        if (emp.userData.profileImage !== undefined && emp.userData.profileImage !== null) {
+          userCreateData.profileImage = emp.userData.profileImage;
+        }
+
         const user = await this.prisma.user.create({
-          data: {
-            phoneNumber: emp.userData.phoneNumber,
-            name: emp.userData.name,
-            email: emp.userData.email,
-            gender: emp.userData.gender as any, // Should be Gender enum or undefined
-            pronouns: emp.userData.pronouns as any, // Should be Pronouns enum or undefined
-            dateOfBirth: emp.userData.dateOfBirth,
-            profileImage: emp.userData.profileImage,
-            isActive: true,
-            roles: [UserRole.BUSINESS_EMPLOYEE],
-          },
+          data: userCreateData,
         });
 
         // 2. Create provider entry mapped to businessProviderId
@@ -117,14 +140,17 @@ export class BusinessService {
           },
         });
 
-        // 3. Create service entry with providerId
-        const service = await this.prisma.service.create({
-          data: {
-            ...emp.serviceData,
-            providerId: provider.id,
-            businessProviderId: businessId,
-          },
-        });
+        // 3. Optionally create service entry with providerId if serviceData is provided
+        let service: any = undefined;
+        if (emp.serviceData && Object.keys(emp.serviceData).length > 0) {
+          service = await this.prisma.service.create({
+            data: {
+              ...emp.serviceData,
+              providerId: provider.id,
+              businessProviderId: businessId,
+            },
+          });
+        }
 
         // 4. Create availability entry with providerId
         const availability = await this.prisma.availability.create({
@@ -139,7 +165,7 @@ export class BusinessService {
           success: true,
           user,
           provider,
-          service,
+          service: service ?? undefined,
           availability,
         });
       } catch (err) {
