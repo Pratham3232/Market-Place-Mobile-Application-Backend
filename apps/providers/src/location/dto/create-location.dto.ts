@@ -8,6 +8,21 @@ export class CreateLocationDto {
 	userId?: number;
 
 	@IsOptional()
+	@IsString()
+	locationName?: string;
+
+	@IsOptional()
+	@IsString()
+	businessName?: string;
+
+	@IsOptional()
+	@IsInt()
+	spacesAvailable?: number;
+
+	@IsOptional()
+	fullFacilityReserve?: boolean;
+
+	@IsOptional()
 	@ValidateNested()
 	@Type(() => UserDataDto)
 	userData?: UserDataDto;

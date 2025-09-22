@@ -130,13 +130,29 @@ export class UserService {
     // Register user with a single role, or add role to existing user
     async registerOrUpdateUserRole(registerUserDto: RegisterUserDto): Promise<User> {
         const { phoneNumber, roles, ...rest } = registerUserDto;
-        const role = Array.isArray(roles) ? roles[0] : roles; // Only one role allowed for register
+        let roleToAdd: UserRole | undefined = undefined;
+        if (Array.isArray(roles) && roles.length > 0) {
+            roleToAdd = roles[0];
+        } else if (typeof roles === 'string' && roles) {
+            roleToAdd = roles as UserRole;
+        }
+
         let user = await this.prisma.user.findUnique({ where: { phoneNumber } });
 
         if (user) {
-            // Add role if not present
-            if (!user.roles.includes(role)) {
-                const updatedRoles = [...user.roles, role];
+            // If user.roles is empty or undefined, initialize with the new role
+            if (!user.roles || user.roles.length === 0) {
+                if (roleToAdd) {
+                    user = await this.prisma.user.update({
+                        where: { id: user.id },
+                        data: { roles: [roleToAdd] },
+                    });
+                }
+                return user;
+            }
+            // Add role if not present and roleToAdd is defined
+            if (roleToAdd && !user.roles.includes(roleToAdd)) {
+                const updatedRoles = [...user.roles, roleToAdd];
                 user = await this.prisma.user.update({
                     where: { id: user.id },
                     data: { roles: updatedRoles },
@@ -144,11 +160,11 @@ export class UserService {
             }
             return user;
         } else {
-            // Create user with roles array containing the single role
+            // Create user with roles array containing the single role if provided, else empty array
             return this.prisma.user.create({
                 data: {
                     phoneNumber,
-                    roles: [role],
+                    roles: roleToAdd ? [roleToAdd] : [],
                     ...rest,
                 },
             });

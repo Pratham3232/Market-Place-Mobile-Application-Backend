@@ -130,6 +130,10 @@ CREATE TABLE "BusinessMember" (
 CREATE TABLE "LocationProvider" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
+    "locationName" TEXT,
+    "businessName" TEXT,
+    "spacesAvailable" INTEGER,
+    "fullFacilityReserve" BOOLEAN DEFAULT false,
     "phone" TEXT,
     "contactPerson" TEXT,
     "website" TEXT,
