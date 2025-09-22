@@ -24,7 +24,7 @@ export class StorageService {
   async uploadImage(
     file: Express.Multer.File,
     userId: string,
-    // userType: UserRole,
+    locationProviderId?: number,
   ): Promise<{ status: boolean; url?: string; message?: string; error?: any }> {
     try {
       const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
@@ -32,12 +32,15 @@ export class StorageService {
       // Ensure container exists (no-op if it already does)
       await containerClient.createIfNotExists({ access: 'container' }); // change to 'private' in prod
 
-      // Make a safe blob name (avoid weird chars)
-      // const safeUserType = encodeURIComponent(userType);
       const safeUserId = encodeURIComponent(userId);
+      let blobName: string;
       // const timestamp = Date.now();
-      const blobName = `user/${safeUserId}/${file.originalname}`;
-
+      if (locationProviderId) {
+        // For location provider images, include locationProviderId in path
+        blobName = `user/${safeUserId}/location/${locationProviderId}/${file.originalname}`;
+      } else {
+        blobName = `user/${safeUserId}/${file.originalname}`;
+      }
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
       // Upload the buffer
@@ -49,9 +52,8 @@ export class StorageService {
         status: true,
         url: blockBlobClient.url 
       };
+      
     } catch (err) {
-      // bubble a clear server error to client
-      // throw new InternalServerErrorException('Failed to upload image');
       return {
         status: false,
         error: err.message || 'Failed to upload image'

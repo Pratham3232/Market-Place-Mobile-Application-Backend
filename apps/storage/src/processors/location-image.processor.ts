@@ -27,7 +27,6 @@ export class LocationImageProcessor {
   @EventPattern(QUEUE_PATTERNS.UPLOAD_LOCATION_IMAGES)
   async handleImageUpload(job: LocationImageUploadJob) {
     this.logger.log(`Processing image upload job for location ${job.locationProviderId}`);
-    
     try {
       const uploadPromises = job.images.map(async (imageData) => {
         try {
@@ -46,7 +45,7 @@ export class LocationImageProcessor {
           };
 
           // Upload to storage service
-          const uploadResult = await this.storageService.uploadImage(mockFile, job.userId);
+          const uploadResult = await this.storageService.uploadImage(mockFile, job.userId, job.locationProviderId);
 
           if (!uploadResult.status || !uploadResult.url) {
             throw new Error(uploadResult.error || 'Storage service did not return a valid URL');
