@@ -17,24 +17,24 @@ export class UserService {
     }
 
     async getUserByIdAndRole(id: string, role: UserRole){
-        try{
+        try {
             let query: any = {
                 where: {
                     id: Number(id),
                 },
+                include: {},
             };
 
             switch (role) {
                 case UserRole.SOLO_PROVIDER:
-                    query.where.roles = { has: UserRole.SOLO_PROVIDER };
+                case UserRole.BUSINESS_EMPLOYEE:
+                    query.where.roles = { has: role };
                     query.include = { provider: true };
                     break;
-
                 case UserRole.LOCATION_PROVIDER:
                     query.where.roles = { has: UserRole.LOCATION_PROVIDER };
                     query.include = { LocationProvider: true };
                     break;
-
                 case UserRole.BUSINESS_PROVIDER:
                     query.where.roles = { has: UserRole.BUSINESS_PROVIDER };
                     query.include = { BusinessProvider: true };
@@ -50,7 +50,7 @@ export class UserService {
                 data: user
             }
 
-        }catch(err){
+        } catch (err) {
             return {
                 status: false,
                 error: err.message

@@ -18,9 +18,9 @@ export class SoloService {
 		try {
 			// @ts-ignore: soloProvider exists in the database but not in generated types
 			return await this.prisma.provider.findMany({
-				where: {
-					soloProvider: true,
-				} as any,
+				// where: {
+				// 	soloProvider: true,
+				// } as any,
 			});
 		} catch (err) {
 			console.error(err);
