@@ -39,28 +39,105 @@ export class BusinessService {
    * Onboard employee using onboarding link (token)
    */
   async onboardEmployeeViaLink(token: string, userData: any, serviceData: any, availabilityData: any) {
-    // 1. Verify link
-    const link = await this.prisma.linkExpiryAndUsage.findUnique({ where: { token } });
-    if (!link || link.expiresAt < new Date() || link.limitConsumed <= 0) {
-      return { success: false, message: 'Invalid or expired link' };
+    try {
+      // 1. Verify link
+      const link = await this.prisma.linkExpiryAndUsage.findUnique({ where: { token } });
+      if (!link || link.expiresAt < new Date() || link.limitConsumed <= 0) {
+        return { success: false, message: 'Invalid or expired link' };
+      }
+
+      // 2. Add employee to business (custom logic, not addEmployeeToBusiness)
+      // Check if user with phoneNumber exists and has SOLO_PROVIDER role
+      const existingUser = await this.prisma.user.findUnique({
+        where: { phoneNumber: userData.phoneNumber },
+      });
+      if (existingUser && existingUser.roles && existingUser.roles.includes(UserRole.SOLO_PROVIDER)) {
+        return {
+          success: false,
+          message: `User with phone number ${userData.phoneNumber} already exists as SOLO_PROVIDER and cannot be added as BUSINESS_EMPLOYEE`,
+        };
+      }
+
+      // 3. Upsert user: update if exists, else create. Always patch fields and ensure BUSINESS_EMPLOYEE role is present only once.
+      // Always update the existing user entry with userData fields (never create)
+      let user: any;
+      if (existingUser) {
+        user = await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: userData.name,
+            email: userData.email,
+            gender: userData.gender,
+            pronouns: userData.pronouns,
+            dateOfBirth: userData.dateOfBirth,
+            profileImage: userData.profileImage,
+            isActive: true,
+          },
+        });
+      } else {
+        // Defensive: if user does not exist, throw error (should never happen)
+        throw new Error('User not found for onboarding');
+      }
+
+      // 4. Create provider entry mapped to businessProviderId
+      const provider = await this.prisma.provider.create({
+        data: {
+          userId: user.id,
+          businessProviderId: link.businessProviderId,
+          soloProvider: false,
+          isActive: true,
+        },
+      });
+
+      // 5. Optionally create service entry with providerId if serviceData is provided and not empty
+      let service: any = undefined;
+      if (serviceData && Object.keys(serviceData).length > 0) {
+        service = await this.prisma.service.create({
+          data: {
+            ...serviceData,
+            providerId: provider.id,
+            businessProviderId: link.businessProviderId,
+          },
+        });
+      }
+
+      // 6. Optionally create availability entry with providerId if availabilityData is provided and not empty
+      let availability: any = undefined;
+      if (availabilityData && Object.keys(availabilityData).length > 0) {
+        availability = await this.prisma.availability.create({
+          data: {
+            ...availabilityData,
+            providerId: provider.id,
+          },
+        });
+      }
+
+      // 7. Decrement usage and push userId to employeeUsed
+      await this.prisma.linkExpiryAndUsage.update({
+        where: { token },
+        data: {
+          limitConsumed: { decrement: 1 },
+          employeeUsed: {
+            push: user.id,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        data: {
+          user,
+          provider,
+          service,
+          availability,
+        },
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message || 'Failed to onboard employee',
+      };
     }
-    // 2. Add employee to business
-    const addResult = await this.addEmployeeToBusiness(link.businessProviderId, [{ userData, serviceData, availabilityData }]);
-    if (!addResult.success) {
-      return { success: false, message: addResult.results[0]?.message || 'Failed to onboard employee' };
-    }
-    // 3. Decrement usage and push userId to employeeUsed
-    const newUserId = addResult.results[0]?.user?.id;
-    await this.prisma.linkExpiryAndUsage.update({
-      where: { token },
-      data: {
-        limitConsumed: { decrement: 1 },
-        employeeUsed: {
-          push: newUserId
-        }
-      },
-    });
-    return { success: true, data: addResult.results[0] };
   }
 
 
