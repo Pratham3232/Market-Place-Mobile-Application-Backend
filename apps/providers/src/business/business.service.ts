@@ -594,7 +594,7 @@ export class BusinessService {
         },
       });
 
-      const inviteUrl = `${process.env.FRONTEND_BASE_URL}/onboard-employee?token=${token}`;
+      const inviteUrl = `${process.env.FRONTEND_BASE_URL}?token=${token}`;
 
       // Return the invite link (token)
       return {
