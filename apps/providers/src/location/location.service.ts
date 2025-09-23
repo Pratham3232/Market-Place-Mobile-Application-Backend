@@ -76,21 +76,26 @@ export class LocationService {
       });
       if (exists) throw new BadRequestException('Location provider for this user already exists');
 
-      // Create location provider with location-specific fields (address fields now in LocationProvider)
+      // Create location provider with all fields from CreateLocationDto
+      // Only include fields that are defined in dto
+      const locationData: any = { userId: actualUserId };
+      if (dto.locationName !== undefined) locationData.locationName = dto.locationName;
+      if (dto.businessName !== undefined) locationData.businessName = dto.businessName;
+      if (dto.spacesAvailable !== undefined) locationData.spacesAvailable = dto.spacesAvailable;
+      if (dto.fullFacilityReserve !== undefined) locationData.fullFacilityReserve = dto.fullFacilityReserve;
+      if (dto.capacity !== undefined) locationData.capacity = dto.capacity;
+      if (dto.phone !== undefined) locationData.phone = dto.phone;
+      if (dto.contactPerson !== undefined) locationData.contactPerson = dto.contactPerson;
+      if (dto.website !== undefined) locationData.website = dto.website;
+      if (dto.fullAddress !== undefined) locationData.fullAddress = dto.fullAddress;
+      if (dto.address !== undefined) locationData.address = dto.address;
+      if (dto.city !== undefined) locationData.city = dto.city;
+      if (dto.state !== undefined) locationData.state = dto.state;
+      if (dto.zipCode !== undefined) locationData.zipCode = dto.zipCode;
+      if (dto.latitude !== undefined) locationData.latitude = dto.latitude;
+      if (dto.longitude !== undefined) locationData.longitude = dto.longitude;
       return await this.prisma.locationProvider.create({
-        data: {
-          userId: actualUserId,
-          phone: dto.phone,
-          contactPerson: dto.contactPerson,
-          website: dto.website,
-          fullAddress: dto.fullAddress,
-          address: dto.address,
-          city: dto.city,
-          state: dto.state,
-          zipCode: dto.zipCode,
-          latitude: dto.latitude,
-          longitude: dto.longitude,
-        },
+        data: locationData,
         include: {
           User: true,
         },
@@ -142,17 +147,21 @@ export class LocationService {
         if (userData.isActive !== undefined) userUpdateData.isActive = userData.isActive;
       }
 
-      // Location provider specific fields (address fields now in LocationProvider)
-      if (dto.phone !== undefined) locationUpdateData.phone = dto.phone;
-      if (dto.contactPerson !== undefined) locationUpdateData.contactPerson = dto.contactPerson;
-      if (dto.website !== undefined) locationUpdateData.website = dto.website;
-      if (dto.fullAddress !== undefined) locationUpdateData.fullAddress = dto.fullAddress;
-      if (dto.address !== undefined) locationUpdateData.address = dto.address;
-      if (dto.city !== undefined) locationUpdateData.city = dto.city;
-      if (dto.state !== undefined) locationUpdateData.state = dto.state;
-      if (dto.zipCode !== undefined) locationUpdateData.zipCode = dto.zipCode;
-      if (dto.latitude !== undefined) locationUpdateData.latitude = dto.latitude;
-      if (dto.longitude !== undefined) locationUpdateData.longitude = dto.longitude;
+  if (dto.locationName !== undefined) locationUpdateData.locationName = dto.locationName;
+  if (dto.businessName !== undefined) locationUpdateData.businessName = dto.businessName;
+  if (dto.spacesAvailable !== undefined) locationUpdateData.spacesAvailable = dto.spacesAvailable;
+  if (dto.fullFacilityReserve !== undefined) locationUpdateData.fullFacilityReserve = dto.fullFacilityReserve;
+  if (dto.capacity !== undefined) locationUpdateData.capacity = dto.capacity;
+  if (dto.phone !== undefined) locationUpdateData.phone = dto.phone;
+  if (dto.contactPerson !== undefined) locationUpdateData.contactPerson = dto.contactPerson;
+  if (dto.website !== undefined) locationUpdateData.website = dto.website;
+  if (dto.fullAddress !== undefined) locationUpdateData.fullAddress = dto.fullAddress;
+  if (dto.address !== undefined) locationUpdateData.address = dto.address;
+  if (dto.city !== undefined) locationUpdateData.city = dto.city;
+  if (dto.state !== undefined) locationUpdateData.state = dto.state;
+  if (dto.zipCode !== undefined) locationUpdateData.zipCode = dto.zipCode;
+  if (dto.latitude !== undefined) locationUpdateData.latitude = dto.latitude;
+  if (dto.longitude !== undefined) locationUpdateData.longitude = dto.longitude;
 
       // Update user data if there are changes
       if (Object.keys(userUpdateData).length > 0) {
