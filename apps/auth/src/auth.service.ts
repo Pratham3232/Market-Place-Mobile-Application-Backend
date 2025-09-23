@@ -13,6 +13,24 @@ export class AuthService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) { }
 
+  async businessEmployeeCheck(id: string) {
+    try {
+      const user = await this.userService.getUserByPhoneNumber(id);
+      if (!user || !user.roles || !user.roles.includes('BUSINESS_EMPLOYEE')) {
+        throw new UnauthorizedException('User not found or not a business employee');
+      }
+      return {
+        success: true,
+        data: user
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message
+      };
+    }
+  }
+
   async signupLogin(phoneNumber: string) {
     try {
       

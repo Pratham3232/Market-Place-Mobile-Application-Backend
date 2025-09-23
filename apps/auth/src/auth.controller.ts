@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException, Headers, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Headers, UseGuards, Logger, Get, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthGuard } from './guards/auth.guard';
@@ -22,6 +22,11 @@ export class AuthController {
   @Post('sign-up-otp-verify')
   async signUpOtpVerification(@Body() body: { otp: string; phoneNumber: string }) {
     return this.authService.verifyRegisterOtp(body.phoneNumber, body.otp);
+  }
+
+  @Get('business-employee/check/:id')
+  async businessEmployeeCheck(@Param('id') id: string) {
+    return this.authService.businessEmployeeCheck(id);
   }
 
   @Post('login-otp')
