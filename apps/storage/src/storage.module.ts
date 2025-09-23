@@ -12,17 +12,6 @@ const rabbitUrl = process.env.RABBITMQ_HOST as string;
 @Module({
   imports: [
     PrismaModule,
-    ClientsModule.register([
-      {
-        name: 'USER_PROFILE_QUEUE',
-        transport: Transport.RMQ,
-        options: {
-          urls: [rabbitUrl],
-          queue: QUEUE_NAMES.USER_PROFILE_IMAGE_UPLOAD,
-          queueOptions: { durable: true },
-        },
-      },
-    ]),
   ],
   controllers: [StorageController],
   providers: [StorageService, LocationImageProcessor, UserProfileImageProcessor],

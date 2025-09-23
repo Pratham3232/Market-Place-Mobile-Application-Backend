@@ -12,7 +12,9 @@ export class UserProfileImageProcessor {
   constructor(
     private prisma: PrismaService,
     private storageService: StorageService
-  ) {}
+  ) {
+    console.log('UserProfileImageProcessor instantiated');
+  }
 
   @EventPattern(QUEUE_PATTERNS.UPLOAD_USER_PROFILE_IMAGE)
   async handleUserProfileImageUpload(job: UserProfileImageUploadJob) {
@@ -32,6 +34,8 @@ export class UserProfileImageProcessor {
         path: '',
         stream: undefined as any,
       };
+      
+      console.log('Uploading image for user:', job.userId);
 
       // Upload to storage service
       const uploadResult = await this.storageService.uploadImage(mockFile, job.userId);
@@ -52,6 +56,8 @@ export class UserProfileImageProcessor {
           name: true,
         },
       });
+
+      console.log('Updated user profile image:', updatedUser);
 
       this.logger.log(`Successfully uploaded and updated profile image for user: ${updatedUser.id}`);
       

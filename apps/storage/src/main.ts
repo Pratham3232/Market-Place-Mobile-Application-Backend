@@ -1,7 +1,8 @@
+
+
 import { NestFactory } from '@nestjs/core';
 import { StorageModule } from './storage.module';
 import { json, urlencoded } from 'express';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
@@ -15,21 +16,10 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [rabbitUrl],
-      queue: 'storage_queue',
+      queue: 'user_profile_image_upload',
       queueOptions: { durable: true },
     },
   });
-
-  // Swagger configuration
-  const config = new DocumentBuilder()
-    .setTitle('Storage Service')
-    .setDescription('Storage Service for Media uploads and management')
-    .setVersion('1.0')
-    // .addBearerAuth()
-    .addTag('storage')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
 
   await app.startAllMicroservices();
   await app.listen(process.env.port ?? 3000);

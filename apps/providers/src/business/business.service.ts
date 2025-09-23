@@ -141,23 +141,23 @@ export class BusinessService {
         });
 
         // 3. Optionally create service entry with providerId if serviceData is provided
-        let service: any = undefined;
-        if (emp.serviceData && Object.keys(emp.serviceData).length > 0) {
-          service = await this.prisma.service.create({
-            data: {
-              ...emp.serviceData,
-              providerId: provider.id,
-              businessProviderId: businessId,
-            },
-          });
-        }
+        // let service: any = undefined;
+        // if (emp.serviceData && Object.keys(emp.serviceData).length > 0) {
+        //   service = await this.prisma.service.create({
+        //     data: {
+        //       ...emp.serviceData,
+        //       providerId: provider.id,
+        //       businessProviderId: businessId,
+        //     },
+        //   });
+        // }
 
         // 4. Create availability entry with providerId
         const availability = await this.prisma.availability.create({
           data: {
             ...emp.availabilityData,
             providerId: provider.id,
-            businessProviderId: businessId,
+            // businessProviderId: businessId,
           },
         });
 
@@ -165,7 +165,7 @@ export class BusinessService {
           success: true,
           user,
           provider,
-          service: service ?? undefined,
+          // service: service ?? undefined,
           availability,
         });
       } catch (err) {

@@ -105,7 +105,7 @@ export class AuthService {
       return {
         success: true,
         data: token,
-        isNewUser: !userExists,
+        isNewUser: !userExists || user.roles.length === 0,
         roles: user.roles.length > 0 ? user.roles[0] : []
       }
     } catch (err) {
