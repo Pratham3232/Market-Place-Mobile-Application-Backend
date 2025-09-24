@@ -27,6 +27,9 @@ model User {
   provider         Provider?
   BusinessProvider BusinessProvider?
   LocationProvider LocationProvider?
+  Parent           Parent[]
+  Child            Child[]
+  bookings         Booking[]
 
   @@index([phoneNumber, id])
 }
@@ -56,6 +59,7 @@ model Provider {
   services           Service[]
   availability       Availability[]
   conversations      Conversation[]
+  bookings           Booking[]
 
   @@index([isActive, isVerified, soloProvider, businessProviderId])
 }
@@ -89,6 +93,7 @@ model BusinessProvider {
   Availability   Availability[]
   conversations  Conversation[]
   linkExpiryAndUsages LinkExpiryAndUsage[]
+  bookings             Booking[]
 }
 
 model LinkExpiryAndUsage {
@@ -147,6 +152,7 @@ model LocationProvider {
   Availability   Availability[]
   conversations  Conversation[]
   locationImages LocationImage[]
+  bookings         Booking[]
 }
 
 model LocationImage {
@@ -294,6 +300,7 @@ model Service {
   businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id], onDelete: Cascade)
 
   @@index([serviceCategoryId, activityId, ageMin, ageMax, providerId, businessProviderId, isActive])
+  bookings         Booking[]
 }
 
 model Availability {
@@ -313,6 +320,77 @@ model Availability {
 
   @@unique([providerId, locationProviderId, businessProviderId, dayOfWeek, startTime, endTime])
   @@index([providerId, locationProviderId, businessProviderId, dayOfWeek, isActive])
+}
+
+model Parent {
+  id          Int    @id @default(autoincrement())
+  userId      Int
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  email       String @unique
+  phoneNumber String
+
+  @@index([userId])
+}
+
+model Child {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  dateOfBirth DateTime
+}
+
+model Booking {
+  id                 Int               @id @default(autoincrement())
+  userId             Int
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId          Int
+  service            Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  providerId         Int?
+  provider           Provider?         @relation(fields: [providerId], references: [id])
+  businessProviderId Int?
+  businessProvider   BusinessProvider? @relation(fields: [businessProviderId], references: [id])
+  locationProviderId Int?
+  locationProvider   LocationProvider? @relation(fields: [locationProviderId], references: [id])
+  bookingTime       DateTime
+  durationMinutes   Int
+  totalPrice       Decimal           @db.Decimal(10, 2)
+  payments        Payment[]
+  paymentStatus    PaymentStatus     // e.g., PENDING, PAID, REFUNDED
+  status           BookingStatus     // e.g., PENDING, CONFIRMED, CANCELLED, COMPLETED
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([userId, serviceId, providerId, businessProviderId, locationProviderId, status])
+}
+
+model Payment {
+  id              String    @unique       
+  bookingId       Int
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String
+  paymentMethod   String
+  paymentStatus   PaymentStatus
+  transactionId   String    @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([bookingId, transactionId, paymentStatus])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
 }
 
 enum DayOfWeek {
