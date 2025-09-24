@@ -348,23 +348,23 @@ export class BusinessService {
       });
 
       // Create corresponding Provider entry with soloProvider = false and reference to BusinessProvider
-      const provider = await this.prisma.provider.create({
-        data: {
-          userId: actualUserId,
-          soloProvider: false,
-          businessProviderId: businessProvider.id,
-          isActive: true,
-        },
-        include: {
-          user: true,
-          businessProvider: true,
-        },
-      });
+      // const provider = await this.prisma.provider.create({
+      //   data: {
+      //     userId: actualUserId,
+      //     soloProvider: false,
+      //     businessProviderId: businessProvider.id,
+      //     isActive: true,
+      //   },
+      //   include: {
+      //     user: true,
+      //     businessProvider: true,
+      //   },
+      // });
 
       return {
         success: true,
         businessProvider,
-        provider,
+        // provider,
         message: 'Business provider and corresponding provider entry created successfully'
       };
     } catch (err) {

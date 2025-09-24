@@ -139,4 +139,16 @@ export class BookingController {
     const dateRange = fromDate && toDate ? { fromDate, toDate } : undefined;
     return this.bookingService.getBusinessSchedule(businessProviderId, dateRange);
   }
+
+  // ========== LOCATION EMPLOYER ENDPOINTS ==========
+
+  @Get('location/:locationProviderId/bookings')
+  getLocationBookings(
+    @Param('locationProviderId', ParseIntPipe) locationProviderId: number,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string
+  ) {
+    const dateRange = fromDate && toDate ? { fromDate, toDate } : undefined;
+    return this.bookingService.getLocationBookings(locationProviderId, dateRange);
+  }
 }

@@ -356,13 +356,28 @@ model Booking {
   bookingTime       DateTime
   durationMinutes   Int
   totalPrice       Decimal           @db.Decimal(10, 2)
-  payments        Payment[]
+  payments         Payment[]
+  sessions         BookingSession[]
   paymentStatus    PaymentStatus     // e.g., PENDING, PAID, REFUNDED
   status           BookingStatus     // e.g., PENDING, CONFIRMED, CANCELLED, COMPLETED
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
   @@index([userId, serviceId, providerId, businessProviderId, locationProviderId, status])
+}
+
+model BookingSession {
+  id          Int      @id @default(autoincrement())
+  bookingId   Int
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  startTime   DateTime
+  endTime     DateTime
+  recap  String?
+  status     BookingStatus
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([bookingId, expiresAt])
 }
 
 model Payment {

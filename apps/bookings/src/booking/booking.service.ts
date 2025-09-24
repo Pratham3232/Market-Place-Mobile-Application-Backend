@@ -728,4 +728,74 @@ export class BookingService {
 
     return age;
   }
+
+  // ========== LOCATION EMPLOYER SPECIFIC METHODS ==========
+  
+  /**
+   * Get bookings for a location provider
+   */
+  async getLocationBookings(locationProviderId: number, dateRange?: { fromDate: string, toDate: string }) {
+    const where: any = {
+      locationProviderId
+    };
+    if (dateRange) {
+      where.bookingTime = {};
+      if (dateRange.fromDate) where.bookingTime.gte = new Date(dateRange.fromDate);
+      if (dateRange.toDate) where.bookingTime.lte = new Date(dateRange.toDate);
+    }
+
+    const bookings = await this.prisma.booking.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            name: true,
+            Child: {
+              select: {
+                name: true,
+                dateOfBirth: true
+              }
+            }
+          }
+        },
+        provider: {
+          select: {
+            user: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        service: {
+          select: {
+            name: true
+          }
+        },
+        locationProvider: {
+          select: {
+            locationName: true,
+            address: true
+          }
+        }
+      },
+      orderBy: {
+        bookingTime: 'asc'
+      }
+    });
+
+    return bookings.map(booking => ({
+      id: booking.id,
+      childName: booking.user.Child?.[0]?.name || 'N/A',
+      childAge: booking.user.Child?.[0] ? this.calculateAge(booking.user.Child[0].dateOfBirth) : null,
+      assignee: booking.provider?.user.name,
+      service: booking.service.name,
+      location: booking.locationProvider ?
+        `${booking.locationProvider.locationName}, ${booking.locationProvider.address}` :
+        'Provider Location',
+      time: booking.bookingTime,
+      duration: booking.durationMinutes,
+      status: booking.status
+    }));
+  }
 }
