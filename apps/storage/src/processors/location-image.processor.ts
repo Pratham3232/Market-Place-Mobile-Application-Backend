@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EventPattern } from '@nestjs/microservices';
+import { EventPattern, MessagePattern } from '@nestjs/microservices';
 import { QUEUE_PATTERNS } from '@app/common';
 import { PrismaService } from '../../../../libs/common/src/prisma/prisma.service';
 import { StorageService } from '../storage.service';
@@ -24,7 +24,7 @@ export class LocationImageProcessor {
     private storageService: StorageService
   ) {}
 
-  @EventPattern(QUEUE_PATTERNS.UPLOAD_LOCATION_IMAGES)
+  @MessagePattern(QUEUE_PATTERNS.UPLOAD_LOCATION_IMAGES)
   async handleImageUpload(job: LocationImageUploadJob) {
     this.logger.log(`Processing image upload job for location ${job.locationProviderId}`);
     try {

@@ -372,8 +372,10 @@ model BookingSession {
   booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   startTime   DateTime
   endTime     DateTime
-  recap  String?
-  status     BookingStatus
+  recap       String?
+  recapAttachmentUrl String?
+  recapStatus recapStatus
+  status      SessionStatus
   expiresAt   DateTime
   createdAt   DateTime @default(now())
 
@@ -395,6 +397,12 @@ model Payment {
   @@index([bookingId, transactionId, paymentStatus])
 }
 
+enum recapStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
 enum PaymentStatus {
   PENDING
   PAID
@@ -406,6 +414,12 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
 }
 
 enum DayOfWeek {

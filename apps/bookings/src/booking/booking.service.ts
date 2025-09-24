@@ -3,11 +3,34 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { QueryBookingDto } from './dto/query-booking.dto';
 import { PrismaService } from '@app/common';
-import { Booking, BookingStatus, PaymentStatus } from '@prisma/client';
+import { Booking, BookingStatus, PaymentStatus, SessionStatus } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class BookingService {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Create a booking session when booking is confirmed
+   */
+  private async createBookingSession(bookingId: number, bookingTime: Date, durationMinutes: number) {
+    const startTime = new Date(bookingTime);
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60000); // Convert minutes to milliseconds
+    
+    // Set expiry to 24 hours after the session end time for recap
+    const expiresAt = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);
+
+    return this.prisma.bookingSession.create({
+      data: {
+        bookingId,
+        startTime,
+        endTime,
+        recapStatus: 'PENDING',
+        status: SessionStatus.SCHEDULED,
+        expiresAt
+      }
+    });
+  }
 
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
     try {
@@ -68,9 +91,15 @@ export class BookingService {
           provider: true,
           businessProvider: true,
           locationProvider: true,
-          payments: true
+          payments: true,
+          sessions: true
         }
       });
+
+      // Create BookingSession if booking status is CONFIRMED
+      if (booking.status === BookingStatus.CONFIRMED) {
+        await this.createBookingSession(booking.id, booking.bookingTime, booking.durationMinutes);
+      }
 
       return booking;
     } catch (error) {
@@ -219,9 +248,21 @@ export class BookingService {
           provider: true,
           businessProvider: true,
           locationProvider: true,
-          payments: true
+          payments: true,
+          sessions: true
         }
       });
+
+      // Create BookingSession if status is being changed to CONFIRMED and no sessions exist yet
+      if (updateBookingDto.status === BookingStatus.CONFIRMED && existingBooking.status !== BookingStatus.CONFIRMED) {
+        const existingSessions = await this.prisma.bookingSession.count({
+          where: { bookingId: id }
+        });
+        
+        if (existingSessions === 0) {
+          await this.createBookingSession(booking.id, booking.bookingTime, booking.durationMinutes);
+        }
+      }
 
       return booking;
     } catch (error) {
@@ -381,6 +422,62 @@ export class BookingService {
       sortOrder: 'asc',
       limit: 5
     });
+  }
+
+  async getLocationUpcomingSessions(locationProviderId: number) {
+    const now = new Date();
+    const upcomingSessions = await this.prisma.booking.findMany({
+      where: {
+        locationProviderId,
+        bookingTime: {
+          gte: now
+        },
+        status: BookingStatus.CONFIRMED
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            Child: {
+              select: {
+                name: true,
+                dateOfBirth: true
+              }
+            }
+          }
+        },
+        provider: {
+          select: {
+            user: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        service: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        bookingTime: 'asc'
+      },
+      take: 10
+    });
+
+    return upcomingSessions.map(session => ({
+      id: session.id,
+      clientName: session.user.name,
+      childName: session.user.Child?.[0]?.name || 'N/A',
+      childAge: session.user.Child?.[0] ? this.calculateAge(session.user.Child[0].dateOfBirth) : null,
+      providerName: session.provider?.user.name,
+      service: session.service.name,
+      time: session.bookingTime,
+      duration: session.durationMinutes,
+      status: session.status
+    }));
   }
 
   /**
@@ -727,6 +824,111 @@ export class BookingService {
     }
 
     return age;
+  }
+
+  // ========== PROVIDER EARNINGS METHODS ==========
+  
+  /**
+   * Calculate total earnings for a provider based on completed booking sessions
+   */
+  async getProviderEarnings(providerId: number) {
+    // Get all completed bookings for the provider
+    const completedBookings = await this.prisma.booking.findMany({
+      where: {
+        providerId,
+        status: BookingStatus.COMPLETED,
+        sessions: {
+          some: {
+            status: SessionStatus.COMPLETED
+          }
+        }
+      },
+      include: {
+        sessions: {
+          where: {
+            status: SessionStatus.COMPLETED
+          }
+        }
+      }
+    });
+
+    // Calculate total earnings from completed sessions
+    const totalEarnings = completedBookings.reduce((total, booking) => {
+      // Only count bookings that have at least one completed session
+      if (booking.sessions.length > 0) {
+        return total.add(booking.totalPrice);
+      }
+      return total;
+    }, new Decimal(0));
+
+    return {
+      providerId,
+      totalEarnings: totalEarnings.toNumber(),
+      completedSessions: completedBookings.length,
+      currency: 'USD' // You might want to make this configurable
+    };
+  }
+
+  /**
+   * Calculate total earnings for all providers
+   */
+  async getAllProvidersEarnings() {
+    // Get all providers with completed bookings
+    const providersWithEarnings = await this.prisma.booking.groupBy({
+      by: ['providerId'],
+      where: {
+        providerId: { not: null },
+        status: BookingStatus.COMPLETED,
+        sessions: {
+          some: {
+            status: SessionStatus.COMPLETED
+          }
+        }
+      },
+      _sum: {
+        totalPrice: true
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    // Get provider details and format response
+    const earningsWithDetails = await Promise.all(
+      providersWithEarnings.map(async (providerEarning) => {
+        const provider = await this.prisma.provider.findUnique({
+          where: { id: providerEarning.providerId! },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        });
+
+        return {
+          providerId: providerEarning.providerId,
+          providerName: provider?.user.name || 'Unknown',
+          providerEmail: provider?.user.email || 'Unknown',
+          totalEarnings: providerEarning._sum.totalPrice?.toNumber() || 0,
+          completedSessions: providerEarning._count.id,
+          currency: 'USD'
+        };
+      })
+    );
+
+    // Calculate grand total
+    const grandTotal = earningsWithDetails.reduce((total, provider) => total + provider.totalEarnings, 0);
+
+    return {
+      providers: earningsWithDetails,
+      grandTotal,
+      totalProviders: earningsWithDetails.length,
+      currency: 'USD'
+    };
   }
 
   // ========== LOCATION EMPLOYER SPECIFIC METHODS ==========

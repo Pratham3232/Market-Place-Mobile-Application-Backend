@@ -101,4 +101,96 @@ export class BookingsService {
       totalRevenue: revenue._sum.totalPrice || 0
     };
   }
+
+  // ========== SOLO PROVIDER SPECIFIC METHODS ==========
+  
+  /**
+   * Get all sessions (bookings) for a solo provider with detailed information
+   */
+  async getProviderSessions(providerId: number, queryDto?: any) {
+    return this.bookingService.getProviderSessions(providerId, queryDto);
+  }
+
+  /**
+   * Get upcoming sessions for a provider
+   */
+  async getUpcomingSessions(providerId: number) {
+    return this.bookingService.getUpcomingSessions(providerId);
+  }
+
+  /**
+   * Get next appointment for a provider
+   */
+  async getNextAppointment(providerId: number) {
+    return this.bookingService.getNextAppointment(providerId);
+  }
+
+  /**
+   * Get sessions requiring recap
+   */
+  async getRecapPendingSessions(providerId: number) {
+    return this.bookingService.getRecapPendingSessions(providerId);
+  }
+
+  /**
+   * Get customers/clients for a provider
+   */
+  async getProviderCustomers(providerId: number) {
+    return this.bookingService.getProviderCustomers(providerId);
+  }
+
+  // ========== BUSINESS EMPLOYER SPECIFIC METHODS ==========
+
+  /**
+   * Get employee list for a business provider
+   */
+  async getBusinessEmployees(businessProviderId: number) {
+    return this.bookingService.getBusinessEmployees(businessProviderId);
+  }
+
+  /**
+   * Get session list for business employer
+   */
+  async getBusinessSessions(businessProviderId: number, queryDto?: any) {
+    return this.bookingService.getBusinessSessions(businessProviderId, queryDto);
+  }
+
+  /**
+   * Get business schedule (all employees' schedules)
+   */
+  async getBusinessSchedule(businessProviderId: number, dateRange?: { fromDate: string, toDate: string }) {
+    return this.bookingService.getBusinessSchedule(businessProviderId, dateRange);
+  }
+
+  // ========== LOCATION EMPLOYER SPECIFIC METHODS ==========
+  
+  /**
+   * Get bookings for a location provider
+   */
+  async getLocationBookings(locationProviderId: number, dateRange?: { fromDate: string, toDate: string }) {
+    return this.bookingService.getLocationBookings(locationProviderId, dateRange);
+  }
+
+  /**
+   * Get upcoming sessions for a location provider
+   */
+  async getLocationUpcomingSessions(locationProviderId: number) {
+    return this.bookingService.getLocationUpcomingSessions(locationProviderId);
+  }
+
+  // ========== PROVIDER EARNINGS METHODS ==========
+  
+  /**
+   * Get total earnings for a specific provider
+   */
+  async getProviderEarnings(providerId: number) {
+    return this.bookingService.getProviderEarnings(providerId);
+  }
+
+  /**
+   * Get total earnings for all providers
+   */
+  async getAllProvidersEarnings() {
+    return this.bookingService.getAllProvidersEarnings();
+  }
 }

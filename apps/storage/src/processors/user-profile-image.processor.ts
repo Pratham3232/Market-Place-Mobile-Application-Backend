@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EventPattern } from '@nestjs/microservices';
+import { EventPattern, MessagePattern } from '@nestjs/microservices';
 import { QUEUE_PATTERNS } from '@app/common';
 import { PrismaService } from '../../../../libs/common/src/prisma/prisma.service';
 import { StorageService } from '../storage.service';
@@ -16,7 +16,7 @@ export class UserProfileImageProcessor {
     console.log('UserProfileImageProcessor instantiated');
   }
 
-  @EventPattern(QUEUE_PATTERNS.UPLOAD_USER_PROFILE_IMAGE)
+  @MessagePattern(QUEUE_PATTERNS.UPLOAD_USER_PROFILE_IMAGE)
   async handleUserProfileImageUpload(job: UserProfileImageUploadJob) {
     this.logger.log(`Processing profile image upload for user ${job.userId}`);
     
