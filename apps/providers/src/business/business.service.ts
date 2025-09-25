@@ -6,6 +6,9 @@ import { PrismaService } from '../../../../libs/common/src/prisma/prisma.service
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { SendEmployeeInvitationDto } from './dto/send-employee-invitation.dto';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { GetEmployeesQueryDto } from './dto/get-employees-query.dto';
 import { UserRole, Prisma } from '@prisma/client';
 
 // ...existing code...
@@ -609,6 +612,639 @@ export class BusinessService {
       return {
         success: false,
         message: err.message || 'Failed to generate invite link',
+      };
+    }
+  }
+
+  // ============ EMPLOYEE CRUD METHODS ============
+
+  /**
+   * Create a new employee for a business
+   */
+  async createEmployee(businessId: number, dto: CreateEmployeeDto) {
+    try {
+      // Validate business exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessId },
+      });
+      
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      // Check if user with phoneNumber exists and has SOLO_PROVIDER role
+      const existingUser = await this.prisma.user.findUnique({
+        where: { phoneNumber: dto.phoneNumber },
+      });
+      
+      if (existingUser && existingUser.roles && existingUser.roles.includes(UserRole.SOLO_PROVIDER)) {
+        return {
+          success: false,
+          message: `User with phone number ${dto.phoneNumber} already exists as SOLO_PROVIDER and cannot be added as BUSINESS_EMPLOYEE`,
+        };
+      }
+
+      // Check if user is already an employee of this business
+      if (existingUser) {
+        const existingProvider = await this.prisma.provider.findFirst({
+          where: { 
+            userId: existingUser.id,
+            businessProviderId: businessId,
+          },
+        });
+
+        if (existingProvider) {
+          return {
+            success: false,
+            message: 'User is already an employee of this business',
+          };
+        }
+      }
+
+      let user: any;
+
+      if (existingUser) {
+        // Update existing user with BUSINESS_EMPLOYEE role if not present
+        const roles = existingUser.roles.includes(UserRole.BUSINESS_EMPLOYEE) 
+          ? existingUser.roles 
+          : [...existingUser.roles, UserRole.BUSINESS_EMPLOYEE];
+
+        user = await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: dto.name || existingUser.name,
+            email: dto.email || existingUser.email,
+            gender: dto.gender || existingUser.gender,
+            pronouns: dto.pronouns || existingUser.pronouns,
+            dateOfBirth: dto.dateOfBirth || existingUser.dateOfBirth,
+            profileImage: dto.profileImage || existingUser.profileImage,
+            isActive: dto.isActive !== undefined ? dto.isActive : existingUser.isActive,
+            roles,
+          },
+        });
+      } else {
+        // Create new user
+        user = await this.prisma.user.create({
+          data: {
+            phoneNumber: dto.phoneNumber,
+            name: dto.name,
+            email: dto.email,
+            gender: dto.gender,
+            pronouns: dto.pronouns,
+            dateOfBirth: dto.dateOfBirth,
+            profileImage: dto.profileImage,
+            isActive: dto.isActive || true,
+            roles: [UserRole.BUSINESS_EMPLOYEE],
+          },
+        });
+      }
+
+      // Create provider entry
+      const provider = await this.prisma.provider.create({
+        data: {
+          userId: user.id,
+          businessProviderId: businessId,
+          soloProvider: false,
+          isActive: true,
+        },
+        include: {
+          user: true,
+          businessProvider: true,
+        },
+      });
+
+      // Create service if provided
+      let service: any = undefined;
+      if (dto.serviceData && Object.keys(dto.serviceData).length > 0) {
+        service = await this.prisma.service.create({
+          data: {
+            ...dto.serviceData,
+            providerId: provider.id,
+            businessProviderId: businessId,
+          },
+        });
+      }
+
+      // Create availability if provided
+      let availability: any = undefined;
+      if (dto.availabilityData && Object.keys(dto.availabilityData).length > 0) {
+        availability = await this.prisma.availability.create({
+          data: {
+            ...dto.availabilityData,
+            providerId: provider.id,
+          },
+        });
+      }
+
+      return {
+        success: true,
+        data: {
+          user,
+          provider,
+          service,
+          availability,
+        },
+        message: 'Employee created successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to create employee',
+      };
+    }
+  }
+
+  /**
+   * Get all employees for a business with pagination and search
+   */
+  async getEmployees(businessId: number, query: GetEmployeesQueryDto) {
+    try {
+      // Validate business exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessId },
+      });
+      
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      const { page = 1, limit = 10, search, isActive } = query;
+      const skip = (page - 1) * limit;
+
+      // Build where clause
+      const whereClause: any = {
+        businessProviderId: businessId,
+        soloProvider: false,
+      };
+
+      if (isActive !== undefined) {
+        whereClause.isActive = isActive === 'true';
+      }
+
+      if (search) {
+        whereClause.user = {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { phoneNumber: { contains: search } },
+          ],
+        };
+      }
+
+      // Get employees with pagination
+      const [employees, total] = await Promise.all([
+        this.prisma.provider.findMany({
+          where: whereClause,
+          include: {
+            user: true,
+            services: true,
+            availability: true,
+            businessProvider: {
+              select: {
+                businessName: true,
+                businessType: true,
+              },
+            },
+          },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.provider.count({
+          where: whereClause,
+        }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        success: true,
+        data: {
+          employees,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            totalItems: total,
+            itemsPerPage: limit,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+          },
+        },
+        message: 'Employees fetched successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to fetch employees',
+      };
+    }
+  }
+
+  /**
+   * Get a single employee by ID
+   */
+  async getEmployee(businessId: number, employeeId: number) {
+    try {
+      // Validate business exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessId },
+      });
+      
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      const employee = await this.prisma.provider.findFirst({
+        where: {
+          id: employeeId,
+          businessProviderId: businessId,
+          soloProvider: false,
+        },
+        include: {
+          user: true,
+          services: true,
+          availability: true,
+          businessProvider: {
+            select: {
+              businessName: true,
+              businessType: true,
+            },
+          },
+          bookings: {
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              status: true,
+              bookingTime: true,
+              createdAt: true,
+            },
+          },
+        },
+      });
+
+      if (!employee) {
+        throw new NotFoundException('Employee not found in this business');
+      }
+
+      return {
+        success: true,
+        data: employee,
+        message: 'Employee fetched successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to fetch employee',
+      };
+    }
+  }
+
+  /**
+   * Update an employee
+   */
+  async updateEmployee(businessId: number, employeeId: number, dto: UpdateEmployeeDto) {
+    try {
+      // Validate business exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessId },
+      });
+      
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      // Find the employee
+      const employee = await this.prisma.provider.findFirst({
+        where: {
+          id: employeeId,
+          businessProviderId: businessId,
+          soloProvider: false,
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!employee) {
+        throw new NotFoundException('Employee not found in this business');
+      }
+
+      // Check for phone number conflicts if phone number is being updated
+      if (dto.phoneNumber && dto.phoneNumber !== employee.user.phoneNumber) {
+        const existingUser = await this.prisma.user.findUnique({
+          where: { phoneNumber: dto.phoneNumber },
+        });
+
+        if (existingUser && existingUser.id !== employee.userId) {
+          if (existingUser.roles.includes(UserRole.SOLO_PROVIDER)) {
+            return {
+              success: false,
+              message: `Phone number ${dto.phoneNumber} belongs to an existing SOLO_PROVIDER and cannot be used`,
+            };
+          }
+
+          // Check if this user is already an employee of this business
+          const existingProvider = await this.prisma.provider.findFirst({
+            where: { 
+              userId: existingUser.id,
+              businessProviderId: businessId,
+            },
+          });
+
+          if (existingProvider) {
+            return {
+              success: false,
+              message: 'A user with this phone number is already an employee of this business',
+            };
+          }
+        }
+      }
+
+      // Update user data
+      const userUpdateData: Prisma.UserUpdateInput = {};
+      if (dto.phoneNumber !== undefined) userUpdateData.phoneNumber = dto.phoneNumber;
+      if (dto.name !== undefined) userUpdateData.name = dto.name;
+      if (dto.email !== undefined) userUpdateData.email = dto.email;
+      if (dto.gender !== undefined) userUpdateData.gender = dto.gender;
+      if (dto.pronouns !== undefined) userUpdateData.pronouns = dto.pronouns;
+      if (dto.dateOfBirth !== undefined) userUpdateData.dateOfBirth = dto.dateOfBirth;
+      if (dto.profileImage !== undefined) userUpdateData.profileImage = dto.profileImage;
+      if (dto.isActive !== undefined) userUpdateData.isActive = dto.isActive;
+
+      // Update provider data
+      const providerUpdateData: Prisma.ProviderUpdateInput = {};
+      if (dto.isActive !== undefined) providerUpdateData.isActive = dto.isActive;
+
+      // Perform updates
+      const [updatedUser, updatedProvider] = await Promise.all([
+        Object.keys(userUpdateData).length > 0 
+          ? this.prisma.user.update({
+              where: { id: employee.userId },
+              data: userUpdateData,
+            })
+          : employee.user,
+        Object.keys(providerUpdateData).length > 0
+          ? this.prisma.provider.update({
+              where: { id: employeeId },
+              data: providerUpdateData,
+              include: {
+                user: true,
+                services: true,
+                availability: true,
+                businessProvider: {
+                  select: {
+                    businessName: true,
+                    businessType: true,
+                  },
+                },
+              },
+            })
+          : await this.prisma.provider.findUnique({
+              where: { id: employeeId },
+              include: {
+                user: true,
+                services: true,
+                availability: true,
+                businessProvider: {
+                  select: {
+                    businessName: true,
+                    businessType: true,
+                  },
+                },
+              },
+            }),
+      ]);
+
+      return {
+        success: true,
+        data: { ...updatedProvider, user: updatedUser },
+        message: 'Employee updated successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to update employee',
+      };
+    }
+  }
+
+  /**
+   * Soft delete an employee (deactivate)
+   */
+  async deactivateEmployee(businessId: number, employeeId: number) {
+    try {
+      // Validate business exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessId },
+      });
+      
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      // Find the employee
+      const employee = await this.prisma.provider.findFirst({
+        where: {
+          id: employeeId,
+          businessProviderId: businessId,
+          soloProvider: false,
+        },
+      });
+
+      if (!employee) {
+        throw new NotFoundException('Employee not found in this business');
+      }
+
+      // Deactivate employee
+      const updatedEmployee = await this.prisma.provider.update({
+        where: { id: employeeId },
+        data: { isActive: false },
+        include: {
+          user: true,
+          services: true,
+          availability: true,
+        },
+      });
+
+      return {
+        success: true,
+        data: updatedEmployee,
+        message: 'Employee deactivated successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to deactivate employee',
+      };
+    }
+  }
+
+  /**
+   * Hard delete an employee (remove from business)
+   */
+  async removeEmployee(businessId: number, employeeId: number) {
+    try {
+      // Validate business exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessId },
+      });
+      
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      // Find the employee
+      const employee = await this.prisma.provider.findFirst({
+        where: {
+          id: employeeId,
+          businessProviderId: businessId,
+          soloProvider: false,
+        },
+        include: {
+          user: true,
+          bookings: {
+            where: {
+              status: {
+                in: ['PENDING', 'CONFIRMED'],
+              },
+            },
+          },
+        },
+      });
+
+      if (!employee) {
+        throw new NotFoundException('Employee not found in this business');
+      }
+
+      // Check for active bookings
+      if (employee.bookings && employee.bookings.length > 0) {
+        return {
+          success: false,
+          message: `Cannot remove employee. They have ${employee.bookings.length} active booking(s). Please complete or cancel these bookings first.`,
+        };
+      }
+
+      // Delete related records first
+      await Promise.all([
+        // Delete services
+        this.prisma.service.deleteMany({
+          where: { providerId: employeeId },
+        }),
+        // Delete availability
+        this.prisma.availability.deleteMany({
+          where: { providerId: employeeId },
+        }),
+        // Delete conversations
+        this.prisma.conversation.deleteMany({
+          where: { providerId: employeeId },
+        }),
+      ]);
+
+      // Delete the provider record
+      await this.prisma.provider.delete({
+        where: { id: employeeId },
+      });
+
+      // Update user roles if they have no other provider roles
+      const otherProviderRoles = await this.prisma.provider.findFirst({
+        where: { userId: employee.userId },
+      });
+
+      if (!otherProviderRoles && employee.user) {
+        const updatedRoles = employee.user.roles.filter(role => 
+          role !== UserRole.BUSINESS_EMPLOYEE
+        );
+
+        await this.prisma.user.update({
+          where: { id: employee.userId },
+          data: {
+            roles: updatedRoles.length > 0 ? updatedRoles : [UserRole.MEMBER], // Default to MEMBER if no roles left
+          },
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Employee removed successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to remove employee',
+      };
+    }
+  }
+
+  /**
+   * Get employee statistics for a business
+   */
+  async getEmployeeStats(businessId: number) {
+    try {
+      // Validate business exists
+      const businessProvider = await this.prisma.businessProvider.findUnique({
+        where: { id: businessId },
+      });
+      
+      if (!businessProvider) {
+        throw new NotFoundException('Business provider not found');
+      }
+
+      const [
+        totalEmployees,
+        activeEmployees,
+        inactiveEmployees,
+        employeesWithServices,
+        employeesWithBookings
+      ] = await Promise.all([
+        this.prisma.provider.count({
+          where: { businessProviderId: businessId, soloProvider: false },
+        }),
+        this.prisma.provider.count({
+          where: { businessProviderId: businessId, soloProvider: false, isActive: true },
+        }),
+        this.prisma.provider.count({
+          where: { businessProviderId: businessId, soloProvider: false, isActive: false },
+        }),
+        this.prisma.provider.count({
+          where: { 
+            businessProviderId: businessId, 
+            soloProvider: false,
+            services: { some: {} },
+          },
+        }),
+        this.prisma.provider.count({
+          where: { 
+            businessProviderId: businessId, 
+            soloProvider: false,
+            bookings: { some: {} },
+          },
+        }),
+      ]);
+
+      return {
+        success: true,
+        data: {
+          totalEmployees,
+          activeEmployees,
+          inactiveEmployees,
+          employeesWithServices,
+          employeesWithBookings,
+          utilizationRate: totalEmployees > 0 ? Math.round((employeesWithBookings / totalEmployees) * 100) : 0,
+        },
+        message: 'Employee statistics fetched successfully',
+      };
+    } catch (err) {
+      console.error(err);
+      return {
+        success: false,
+        message: err.message || 'Failed to fetch employee statistics',
       };
     }
   }

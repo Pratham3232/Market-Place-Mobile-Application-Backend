@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, Query } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { SendEmployeeInvitationDto } from './dto/send-employee-invitation.dto';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { GetEmployeesQueryDto } from './dto/get-employees-query.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -71,5 +74,82 @@ export class BusinessController {
   @Post('onboard-employee')
   async onboardEmployeeViaLink(@Body() body: { token: string, userData: any, serviceData: any, availabilityData: any }) {
     return this.businessService.onboardEmployeeViaLink(body.token, body.userData, body.serviceData, body.availabilityData);
+  }
+
+  // ============ EMPLOYEE CRUD ENDPOINTS ============
+
+  /**
+   * Create a new employee for a business
+   */
+  @Post(':businessId/employees')
+  createEmployee(
+    @Param('businessId') businessId: string,
+    @Body() createEmployeeDto: CreateEmployeeDto,
+  ) {
+    return this.businessService.createEmployee(Number(businessId), createEmployeeDto);
+  }
+
+  /**
+   * Get all employees for a business with pagination and search
+   */
+  @Get(':businessId/employees')
+  getEmployees(
+    @Param('businessId') businessId: string,
+    @Query() query: GetEmployeesQueryDto,
+  ) {
+    return this.businessService.getEmployees(Number(businessId), query);
+  }
+
+  /**
+   * Get employee statistics for a business
+   */
+  @Get(':businessId/employees/stats')
+  getEmployeeStats(@Param('businessId') businessId: string) {
+    return this.businessService.getEmployeeStats(Number(businessId));
+  }
+
+  /**
+   * Get a single employee by ID
+   */
+  @Get(':businessId/employees/:employeeId')
+  getEmployee(
+    @Param('businessId') businessId: string,
+    @Param('employeeId') employeeId: string,
+  ) {
+    return this.businessService.getEmployee(Number(businessId), Number(employeeId));
+  }
+
+  /**
+   * Update an employee
+   */
+  @Patch(':businessId/employees/:employeeId')
+  updateEmployee(
+    @Param('businessId') businessId: string,
+    @Param('employeeId') employeeId: string,
+    @Body() updateEmployeeDto: UpdateEmployeeDto,
+  ) {
+    return this.businessService.updateEmployee(Number(businessId), Number(employeeId), updateEmployeeDto);
+  }
+
+  /**
+   * Deactivate an employee (soft delete)
+   */
+  @Patch(':businessId/employees/:employeeId/deactivate')
+  deactivateEmployee(
+    @Param('businessId') businessId: string,
+    @Param('employeeId') employeeId: string,
+  ) {
+    return this.businessService.deactivateEmployee(Number(businessId), Number(employeeId));
+  }
+
+  /**
+   * Remove an employee from business (hard delete)
+   */
+  @Delete(':businessId/employees/:employeeId')
+  removeEmployee(
+    @Param('businessId') businessId: string,
+    @Param('employeeId') employeeId: string,
+  ) {
+    return this.businessService.removeEmployee(Number(businessId), Number(employeeId));
   }
 }
